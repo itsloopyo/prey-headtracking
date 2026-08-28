@@ -1,0 +1,32 @@
+[workspace]
+name = "prey-head-tracking"
+version = "0.0.0"
+description = "Head tracking mod for Prey (2017) using the CameraUnlock shared library"
+license = "MIT"
+channels = ["conda-forge"]
+platforms = ["win-64"]
+
+[dependencies]
+cmake = ">=3.28"
+
+[tasks]
+sync = { cmd = "git submodule update --remote cameraunlock-core" }
+# No -G: let CMake auto-detect the installed Visual Studio generator. Pinning
+# "Visual Studio 17 2022" broke on CI once the windows runner image moved to
+# VS 2026 (VS 17 absent); auto-detect picks whatever VS the machine has.
+setup = { cmd = "powershell -Command \"if (-not (Test-Path 'build')) { cmake -B build -A x64 } else { Write-Host 'Build directory exists' -ForegroundColor Yellow }\"" }
+build = { cmd = "cmake --build build --config Release", depends-on = ["setup"] }
+build-debug = { cmd = "cmake --build build --config Debug", depends-on = ["setup"] }
+# The camera basis maths is the one part testable off the game, and the two
+# halves it locks together - the rotation the camera applies and the projection
+# the reticle is placed from - drift silently when only one is touched. Packaging
+# depends on this so a drifted pair cannot reach a release ZIP.
+test = { cmd = "ctest --test-dir build -C Release --output-on-failure", depends-on = ["build"] }
+clean = { cmd = "powershell -Command \"if (Test-Path 'build') { Remove-Item 'build' -Recurse -Force }\"" }
+clean-all = { cmd = "powershell -Command \"if (Test-Path 'build') { Remove-Item 'build' -Recurse -Force }; if (Test-Path 'release') { Remove-Item 'release' -Recurse -Force }\"" }
+update-deps = { cmd = "powershell -ExecutionPolicy Bypass -File scripts/update-deps.ps1" }
+check-fingerprint = { cmd = "powershell -ExecutionPolicy Bypass -File scripts/check-fingerprint.ps1" }
+package = { cmd = "powershell -ExecutionPolicy Bypass -File scripts/package-release.ps1", depends-on = ["build", "test"] }
+install = { cmd = "powershell -ExecutionPolicy Bypass -File scripts/deploy.ps1 Release", depends-on = ["build"] }
+uninstall = { cmd = "cmd /c scripts\\uninstall.cmd /y" }
+release = { cmd = "powershell -ExecutionPolicy Bypass -File scripts/release.ps1" }

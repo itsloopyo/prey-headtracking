@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project>
+  <PropertyGroup>
+    <!-- Reserved for future C# components. Prey Head Tracking is a C++ DLL today. -->
+  </PropertyGroup>
+</Project>

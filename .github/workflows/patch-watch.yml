@@ -1,0 +1,104 @@
+name: Patch watch
+
+# Prey's camera addresses are pinned per build. This asks Steam once a day
+# whether the public branch has moved and opens an issue when it has, so a
+# profile can be prepared before players land on the dormant path. It is a
+# heads-up channel only: the in-process fingerprint check is what actually keeps
+# the mod off an unknown build.
+on:
+  schedule:
+    - cron: '17 5 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: patch-watch
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6.1.0
+
+      - name: Read app id from the shared games catalog
+        id: game
+        run: |
+          set -euo pipefail
+          appid=$(jq -r '.games.prey.steam_app_id' cameraunlock-core/data/games.json)
+          if [ -z "$appid" ] || [ "$appid" = "null" ]; then
+            echo "::error::prey has no steam_app_id in cameraunlock-core/data/games.json"
+            exit 1
+          fi
+          echo "appid=$appid" >> "$GITHUB_OUTPUT"
+
+      - name: Ask Steam for the public branch buildid
+        id: steam
+        run: |
+          set -euo pipefail
+          docker run --rm steamcmd/steamcmd:ubuntu-22 \
+            +login anonymous +app_info_update 1 \
+            +app_info_print ${{ steps.game.outputs.appid }} +quit > appinfo.txt 2>&1
+          # "public" { ... "buildid" "<n>" ... } - take the first buildid after it.
+          buildid=$(awk '/"public"/{f=1} f && /"buildid"/{gsub(/[^0-9]/,"",$2); print $2; exit}' appinfo.txt)
+          if [ -z "${buildid:-}" ]; then
+            echo "::error::could not parse a buildid out of the SteamCMD output"
+            tail -60 appinfo.txt
+            exit 1
+          fi
+          echo "buildid=$buildid" >> "$GITHUB_OUTPUT"
+          echo "public branch buildid: $buildid"
+
+      - name: Compare with the last known build
+        id: compare
+        run: |
+          set -euo pipefail
+          known=$(cat .github/last-known-build.txt 2>/dev/null || echo "")
+          echo "known=$known" >> "$GITHUB_OUTPUT"
+          if [ "$known" = "${{ steps.steam.outputs.buildid }}" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Record the new build and open an issue
+        if: steps.compare.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NEW: ${{ steps.steam.outputs.buildid }}
+          OLD: ${{ steps.compare.outputs.known }}
+        run: |
+          set -euo pipefail
+          echo "$NEW" > .github/last-known-build.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/last-known-build.txt
+          git commit -m "chore: Prey Steam buildid $OLD -> $NEW [skip ci]"
+          git push
+          gh issue create \
+            --title "Prey Steam build changed: $OLD -> $NEW" \
+            --body "$(cat <<'BODY'
+Steam's public branch for Prey moved. A buildid change does NOT prove the
+shipping EXE changed - asset-only patches move it too - so start by checking the
+fingerprint, and close this issue if nothing moved.
+
+1. Update the game, then run `pixi run check-fingerprint`.
+2. If the fingerprint matches the profile already in
+   `src/PreyHeadTracking/mods/BuildProfile.cpp`, close this issue. No rederive
+   needed.
+3. If it differs, re-derive for the new build and ADD a profile at the top of
+   `kKnownProfiles`. Never edit an existing one: players who have not taken the
+   patch keep matching theirs.
+   - `gEnv->pSystem`, from the ISystem the script binds call.
+   - `gEnv->bMultiplayer`, from the `IsMultiplayer` script bind.
+   - ISystem vtable offsets for `Render` and `GetViewCamera`.
+   - The `Matrix34` offset inside the `CCamera`.
+4. Verify in game: all six axes, aim decoupling (turning the head must not move
+   Prey's interaction focus), and the menu suppression.
+5. CHANGELOG entry as an ADDITION - "adds support for build <id>; earlier builds
+   keep working".
+BODY
+)"
