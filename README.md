@@ -1,8 +1,8 @@
 # Prey Head Tracking
 
-![Prey running with this mod](https://raw.githubusercontent.com/itsloopyo/prey-headtracking/main/assets/readme-clip.gif)
+![Prey (2017) running with this mod](https://raw.githubusercontent.com/itsloopyo/prey-headtracking/main/assets/readme-clip.gif)
 
-An unofficial OpenTrack compatible immersive flatscreen head tracking mod for Prey (2017) look around using your head while you aim with your mouse, no VR headset required.
+An unofficial head tracking mod for Prey (2017) that moves the view with your head while your mouse or controller keeps aiming, driven by a webcam, phone, or any OpenTrack compatible tracker, with no VR headset required.
 
 ## Features
 
