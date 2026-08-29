@@ -214,6 +214,28 @@ void TestAimBehindTheViewLeavesOnTheSameBearing() {
           "an aim point behind the view leaves the screen on its own bearing, not the opposite side");
 }
 
+void TestHudStageScaleMatchesWhatPreyDraws() {
+    // Measured in game, and the numbers are the whole point of the conversion:
+    // 3840x1080 drew the shipped base of 0.575 at 0.6495 down the screen, and
+    // 1440x1080 drew a HUD x of 0.3949 at 0.3594 across it. A 16:9 render draws
+    // both where they were asked for.
+    const preyht::HudStageScale wide = preyht::HudScale(3840.0f / 1080.0f);
+    Check(Near(wide.x, 1.0f) && Near(preyht::HudToScreen(0.575f, wide.y), 0.65f, 1e-3f),
+          "past 16:9 the HUD stage is matched to the width and stretches y (0.575 draws at 0.650)");
+
+    const preyht::HudStageScale narrow = preyht::HudScale(1440.0f / 1080.0f);
+    Check(Near(narrow.y, 1.0f) && Near(preyht::HudToScreen(0.3949f, narrow.x), 0.3599f, 1e-3f),
+          "below 16:9 it is matched to the height and stretches x (0.3949 draws at 0.360)");
+
+    const preyht::HudStageScale native = preyht::HudScale(16.0f / 9.0f);
+    Check(Near(native.x, 1.0f) && Near(native.y, 1.0f),
+          "at 16:9 a HUD coordinate is a screen coordinate and neither axis is touched");
+
+    Check(Near(preyht::ScreenToHud(preyht::HudToScreen(0.3f, wide.y), wide.y), 0.3f) &&
+              Near(preyht::ScreenToHud(preyht::HudToScreen(0.3f, narrow.x), narrow.x), 0.3f),
+          "and the two conversions are inverses, so an unmoved reticle comes back unmoved");
+}
+
 void TestNonFiniteProjectionIsRejected() {
     // The pose arrives over UDP from any host that can reach the machine, and a
     // projection that is not a number does not announce itself downstream: the
@@ -355,6 +377,7 @@ int main() {
     TestPitchAndRollRotateRatherThanWander();
     TestWorldYawLookingDownHoldsTheReticleStill();
     TestAimBehindTheViewLeavesOnTheSameBearing();
+    TestHudStageScaleMatchesWhatPreyDraws();
     TestNonFiniteProjectionIsRejected();
     TestDegenerateAimIsRejected();
     TestLeanSwingsTheReticleTowardsTheImpactPoint();

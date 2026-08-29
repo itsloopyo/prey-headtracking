@@ -165,6 +165,24 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- Fixed the crosshair moving too far on anything that is not 16:9. Prey's
+  reticle position is a coordinate on a 16:9 HUD stage scaled to COVER the
+  display, not a fraction of the screen: past 16:9 the stage is matched to the
+  width and its top and bottom fall off the screen, and below 16:9 it is matched
+  to the height and its sides do. The mod was reading and writing that
+  coordinate as though it were a screen position, so on a 32:9 display every
+  vertical movement of the crosshair was doubled - a head pitch of 15 degrees
+  drove it off the bottom edge - and on 4:3 every horizontal one was 1.33x too
+  far. At 16:9 the two spaces are the same, which is why it took a wide monitor
+  to show it.
+
+  The projection now converts the base position off the stage on the way in and
+  the result back onto it on the way out. Measured in game at 3840x1080 the
+  crosshair lands where the aim projects to within a quarter of a pixel on both
+  axes. This is also the position Prey itself shoots at: its own aim resolver
+  builds the ray from the reticle position scaled by the HUD element's viewport,
+  so the shot follows the drawn crosshair rather than the raw stage number.
+
 - Fixed the player's own first-person body swinging with the head. Prey builds
   the body's render object from the view camera, so it was welded to the view and
   rotated with it on every axis, sweeping across the screen - worst with the

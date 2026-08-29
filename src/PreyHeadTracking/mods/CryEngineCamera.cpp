@@ -219,7 +219,15 @@ void UpdateReticle(void* cam, const Mat34& clean, const Mat34& modified) {
     const float tanV = std::tan(fov * 0.5f);   // m_fov is the VERTICAL angle
     const float tanH = tanV * projRatio;
 
-    const V3 aimDir = UnprojectAim(clean, baseX, baseY, tanH, tanV);
+    // Prey's reticle position is a coordinate on a 16:9 HUD stage, not a screen
+    // fraction - see HudScale. The whole projection below is screen geometry, so
+    // the base comes off the stage on the way in and the result goes back onto it
+    // on the way out. At 16:9 both conversions are the identity.
+    const HudStageScale stage = HudScale(projRatio);
+    const float baseScreenX = HudToScreen(baseX, stage.x);
+    const float baseScreenY = HudToScreen(baseY, stage.y);
+
+    const V3 aimDir = UnprojectAim(clean, baseScreenX, baseScreenY, tanH, tanV);
     const V3 eye    = clean.Trans();
     const V3 lean   = Sub(modified.Trans(), clean.Trans());
 
@@ -236,6 +244,12 @@ void UpdateReticle(void* cam, const Mat34& clean, const Mat34& modified) {
     const AimScreenPos at = ProjectAim(modified, aim, tanH, tanV);
     if (!at.valid) return;
 
+    // Clamped as a SCREEN position, before it goes back onto the stage: past 16:9
+    // the stage runs off the top and bottom of the display, so a stage-space
+    // clamp would park an off-screen aim off the screen.
+    const float hudX = ScreenToHud(Clamp01(at.x), stage.x);
+    const float hudY = ScreenToHud(Clamp01(at.y), stage.y);
+
     if (g_dumpCamera.load(std::memory_order_relaxed)) {
         static unsigned s_n = 0;
         if ((s_n++ % kReticleDumpEveryFrames) == 0) {
@@ -244,23 +258,24 @@ void UpdateReticle(void* cam, const Mat34& clean, const Mat34& modified) {
             // equally well, and the arithmetic that separates them needs the
             // same frame's numbers.
             PHT_LOG(Info, "reticle: fov=%.4f rad (%.1f deg) projRatio=%.4f tanH=%.4f "
-                          "base=(%.4f %.4f) dist=%.2f lean=(%.3f %.3f %.3f) "
-                          "aimcam=(%.4f %.4f %.4f) ndc=(%.4f %.4f) -> (%.4f %.4f)",
-                    fov, fov / kDegToRad, projRatio, tanH, baseX, baseY,
+                          "base=(%.4f %.4f) stage=(%.4f %.4f) dist=%.2f "
+                          "lean=(%.3f %.3f %.3f) aimcam=(%.4f %.4f %.4f) ndc=(%.4f %.4f) "
+                          "screen=(%.4f %.4f) -> (%.4f %.4f)",
+                    fov, fov / kDegToRad, projRatio, tanH, baseX, baseY, stage.x, stage.y,
                     dist, lean.x, lean.y, lean.z, at.camera_relative.x, at.camera_relative.y,
-                    at.camera_relative.z, at.ndc_x, at.ndc_y, at.x, at.y);
+                    at.camera_relative.z, at.ndc_x, at.ndc_y, at.x, at.y, hudX, hudY);
         }
     }
 
     // A centred head leaves the game's own reticle position correct, so give it
     // back rather than holding it there - Prey moves the reticle itself in
     // controller free-aim, and rewriting the same value every frame would pin it.
-    if (std::fabs(at.x - baseX) < kReticleAtBaseEpsilon &&
-        std::fabs(at.y - baseY) < kReticleAtBaseEpsilon) {
+    if (std::fabs(hudX - baseX) < kReticleAtBaseEpsilon &&
+        std::fabs(hudY - baseY) < kReticleAtBaseEpsilon) {
         hud::Restore();
         return;
     }
-    hud::SetPosition(at.x, at.y);
+    hud::SetPosition(hudX, hudY);
 }
 
 /// Decide whether the head pose applies this frame and, if so, build the camera

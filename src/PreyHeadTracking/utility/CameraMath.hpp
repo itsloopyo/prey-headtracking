@@ -120,6 +120,39 @@ void ApplyHeadRotation(Mat34& cam, float yawDeg, float pitchDeg, float rollDeg,
 /// `tanH` / `tanV` are the tangents of the half field of view.
 V3 UnprojectAim(const Mat34& clean, float baseX, float baseY, float tanH, float tanV);
 
+/// How Prey's normalized HUD coordinates stretch against the screen.
+///
+/// The reticle position Prey hands to Flash is NOT a screen fraction. The HUD is
+/// a 16:9 stage scaled to COVER the display, so the axis that runs out first is
+/// the one that keeps the full 0..1 range and the other is cropped: past 16:9
+/// the stage is matched to the width and its top and bottom fall off the screen;
+/// below 16:9 it is matched to the height and its sides do. Only at 16:9 is a
+/// HUD coordinate a screen coordinate, which is why every earlier verification
+/// of the reticle - all of it at 16:9 - agreed to a pixel.
+///
+/// Measured in game at 1440x1080, 3840x1080 and 5120x1440: the shipped base
+/// position of 0.575 draws at 0.6495 on a 32:9 screen (a factor of 2.00, and
+/// 32:9 / 16:9 is 2.00), while a HUD x of 0.3949 draws at 0.3594 on 4:3 (a
+/// factor of 1.34 about the centre against a predicted 16:9 / 4:3 = 1.33).
+struct HudStageScale {
+    float x = 1.0f;
+    float y = 1.0f;
+};
+
+/// `projRatio` is the camera's own m_ProjectionRatio, i.e. the rendered aspect.
+inline HudStageScale HudScale(float projRatio) {
+    constexpr float kStageAspect = 16.0f / 9.0f;
+    if (!(projRatio > 0.0f)) return {};
+    return projRatio >= kStageAspect ? HudStageScale{1.0f, projRatio / kStageAspect}
+                                     : HudStageScale{kStageAspect / projRatio, 1.0f};
+}
+
+/// Both directions of that stretch, about the centre of the screen.
+inline float HudToScreen(float hud, float scale) { return 0.5f + (hud - 0.5f) * scale; }
+inline float ScreenToHud(float screen, float scale) { return 0.5f + (screen - 0.5f) / scale; }
+
+inline float Clamp01(float v) { return v < 0.0f ? 0.0f : (v > 1.0f ? 1.0f : v); }
+
 /// Where an aim vector lands on screen, with the intermediates the camera dump
 /// reports - a sign fault and a distance fault fit the final position equally
 /// well, and only the same frame's intermediates separate them.
