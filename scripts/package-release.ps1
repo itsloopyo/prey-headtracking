@@ -89,22 +89,12 @@ $manifestSrc = Join-Path $projectDir "launcher-manifest.json"
 if (-not (Test-Path $manifestSrc)) { throw "launcher-manifest.json not found at: $manifestSrc" }
 
 # loader.seed is a base64 copy of HeadTracking.ini, and it is the config a
-# launcher-deployed user actually gets. Hand-maintained, it drifted two and a
-# half kilobytes behind: the seed was missing MatchWeaponFieldOfView,
-# BodyFollowsHead and both body-node diagnostics, along with the notes that
-# explain them. Regenerate it from the file the ZIP ships. Write the committed
-# manifest, not just the staged copy - that is what conformance.ps1's
-# manifest-seed check reads, and release.ps1 commits it with the version bump.
-# Raw-text replacement rather than a JSON round-trip so the file's formatting
-# survives.
-$manifestText = [IO.File]::ReadAllText($manifestSrc)
-if ($manifestText -notmatch '"content_b64"') { throw "launcher-manifest.json has no content_b64 seed to refresh" }
-$iniB64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes($iniPath))
-$restamped = $manifestText -replace '("content_b64":\s*")[^"]*(")', "`${1}$iniB64`${2}"
-if ($restamped -ne $manifestText) {
-    [IO.File]::WriteAllText($manifestSrc, $restamped, (New-Object System.Text.UTF8Encoding $false))
-    Write-Host "  launcher-manifest.json seed refreshed from HeadTracking.ini - commit it" -ForegroundColor Yellow
-}
+# launcher-deployed user actually gets. The committed manifest is the
+# authoritative copy of it: reviewable, diffable and in git, where the blob
+# inside the ZIP is a build product. Refreshing the blob from disk here would
+# ship a correct ZIP over a stale committed file, so drift fails the build and
+# gets re-stamped in a commit instead.
+Assert-ManifestSeedsMatchShipped -ManifestPath $manifestSrc -ProjectRoot $projectDir
 
 $manifest = Get-Content $manifestSrc -Raw | ConvertFrom-Json
 $manifest.mod_info.version = $version
