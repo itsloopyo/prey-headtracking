@@ -227,9 +227,12 @@ SensitivityX = 1.0
 SensitivityY = 1.0
 SensitivityZ = 1.0
 
-; Per-axis inversion.
+; Per-axis inversion, for a tracker whose axis runs the other way.
 InvertX = false
 InvertY = false
+; InvertZ is for a tracker that sends depth backwards, not for a lean that
+; feels reversed. It is applied before the LimitZ / LimitZBack clamp, so
+; turning it on also swaps the travel budgets to 0.10m forward and 0.40m back.
 InvertZ = false
 
 ; Travel limits in meters. Z is asymmetric: more range forward (LimitZ) than
@@ -280,7 +283,8 @@ The shipped INI also carries several diagnostic keys, each commented in place. L
 
 **Wrong rotation axis**
 
-- Flip the matching `InvertYaw` / `InvertPitch` / `InvertRoll` in the INI, or `InvertX` / `InvertY` / `InvertZ` for position.
+- Flip the matching `InvertYaw` / `InvertPitch` / `InvertRoll` in the INI, or `InvertX` / `InvertY` for position.
+- `InvertZ` is for a tracker that sends depth backwards, not for a lean that feels reversed. It is applied before the `LimitZ` / `LimitZBack` clamp, so switching it on also swaps the travel budgets to 0.10m forward and 0.40m back.
 - If the view sits off to one side, center it in your tracker app.
 - If yaw feels wrong when you look far up or down, toggle the yaw mode with `Page Down`.
 
