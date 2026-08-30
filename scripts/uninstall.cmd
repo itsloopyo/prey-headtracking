@@ -12,11 +12,12 @@
 :: --- CONFIG BLOCK ---
 set "GAME_ID=prey"
 set "MOD_DISPLAY_NAME=Prey Head Tracking"
-set "MOD_DLLS=PreyHeadTracking.asi HeadTracking.ini"
+set "MOD_DLLS=PreyHeadTracking.asi"
 set "MOD_INTERNAL_NAME=PreyHeadTracking"
 set "STATE_FILE=.headtracking-state.json"
 set "FRAMEWORK_TYPE=ASILoader"
 set "LEGACY_DLLS=HeadTracking.log HeadTracking.prev.log PreyHeadTracking.log PreyHeadTracking.prev.log"
+set "MOD_SEED_FILES=HeadTracking.ini"
 set "PLUGIN_SUBFOLDER="
 set "MANAGED_SUBFOLDER="
 set "ASSEMBLY_DLL="
