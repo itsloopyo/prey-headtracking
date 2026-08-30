@@ -13,7 +13,7 @@ Prey.
 |-----------|---------|---------|--------------|
 | Ultimate ASI Loader | v9.7.2 | MIT | Bundled verbatim in the installer ZIP |
 | MinHook | v1.3.4-14-gd94c64d | BSD-2-Clause | Compiled into `PreyHeadTracking.asi` |
-| cameraunlock-core | 8eb0121979e26e3bf522a61b45f8f40d3f42dee6 | MIT | Compiled into `PreyHeadTracking.asi` |
+| cameraunlock-core | 0f7a63455ddeb91677c9268e88fd35833aa77359 | MIT | Compiled into `PreyHeadTracking.asi` |
 | OpenTrack | n/a | ISC | Not bundled; UDP protocol interoperability only |
 
 ---
@@ -165,7 +165,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ## cameraunlock-core
 
-- **Version:** commit `8eb0121979e26e3bf522a61b45f8f40d3f42dee6`
+- **Version:** commit `0f7a63455ddeb91677c9268e88fd35833aa77359`
 - **License:** `MIT`
 - **Upstream:** https://github.com/itsloopyo/cameraunlock-core
 - **Usage:** Supplies the shared receiver, interpolation, processing and hotkey
