@@ -6,6 +6,7 @@
 
 #include "cameraunlock/data/tracking_pose.h"
 #include "cameraunlock/data/position_settings.h"
+#include "cameraunlock/effects/head_follow_light.h"
 #include "cameraunlock/math/smoothing_utils.h"
 
 namespace preyht {
@@ -107,9 +108,11 @@ struct Config {
     bool force_flashlight = false;
 
     // Turn the flashlight beam with the head, faster than the view, so it lands
-    // on what you turned to look at rather than short of it.
+    // on what you turned to look at rather than short of it. The number and the
+    // reasoning are the fleet's, not this game's - see
+    // cameraunlock/effects/head_follow_light.h.
     bool  compensate_flashlight = true;
-    float flashlight_scale      = 1.5f;
+    float flashlight_scale      = cameraunlock::effects::kDefaultLightMultiplier;
 
     // Diagnostic: log each ArkLight the engine hands over, and arm a one-shot
     // page watch on the first head-mounted beam to catch whatever writes its

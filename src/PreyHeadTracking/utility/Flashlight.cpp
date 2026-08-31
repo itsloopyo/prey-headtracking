@@ -69,7 +69,7 @@ std::atomic<uint32_t>  g_entityOff{0};
 std::atomic<uintptr_t> g_arkLightVtable{0};
 std::atomic<uintptr_t> g_setTransformAddr{0};
 std::atomic<int>       g_setTransformSlot{-1};
-std::atomic<float>     g_scale{1.5f};
+std::atomic<float>     g_scale{cameraunlock::effects::kDefaultLightMultiplier};
 std::atomic<bool>      g_traceLights{false};
 std::atomic<bool>      g_traceLightReader{false};
 std::atomic<bool>      g_watchArmed{false};
@@ -422,7 +422,11 @@ void ApplyTracking() {
     const AxisAngle head = RotationBetween(g_clean, g_modified);
     if (!head.valid) return;   // head is centred; leave the beam alone
 
-    const float scaled = head.angle * g_scale.load(std::memory_order_relaxed);
+    // Scaling the ANGLE about the same axis is the axis-angle spelling of the
+    // shared lead, so this beam and every other one in the fleet turn by the same
+    // arithmetic.
+    const float scaled = cameraunlock::effects::ScaleHeadAngle(
+        head.angle, g_scale.load(std::memory_order_relaxed));
     const float hs = std::sin(scaled * 0.5f);
     const Quat4 delta{head.axis.x * hs, head.axis.y * hs, head.axis.z * hs,
                       std::cos(scaled * 0.5f)};

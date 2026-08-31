@@ -4,6 +4,8 @@
 
 #include "CameraMath.hpp"
 
+#include "cameraunlock/effects/head_follow_light.h"
+
 /// Turning the flashlight beam with the head, faster than the view.
 ///
 /// The beam is an ArkLight component on a child entity of the player. It is not a
@@ -12,10 +14,11 @@
 /// fix the body or the markers can reach it. What it does have is an entity, and
 /// that entity's transform IS the beam.
 ///
-/// It turns 1.5x the head rotation, not 1x, for the reason repo-headtracking
-/// gives: a player who turns their head keeps their eyes on what they turned
-/// towards, so their gaze sits past the centre of the screen, and a light matched
-/// to the view alone lands short of what they are actually looking at.
+/// It turns 1.5x the head rotation, not 1x, for the fleet-wide reason set out in
+/// cameraunlock/effects/head_follow_light.h: a player who turns their head keeps
+/// their eyes on what they turned towards, so their gaze sits past the centre of
+/// the screen, and a light matched to the view alone lands short of what they are
+/// actually looking at.
 namespace preyht::flashlight {
 
 /// Per-build addresses and the player's settings, resolved once from the matched
@@ -25,7 +28,7 @@ struct Binding {
     uint32_t  arklight_entity_off      = 0;  ///< light entity pointer inside that component
     uintptr_t arklight_vtable          = 0;  ///< the ArkLight class, so a light is identified by type
     uintptr_t entity_set_transform_addr = 0; ///< IEntity::SetPosRotScale
-    float     scale                    = 1.5f;
+    float     scale                    = cameraunlock::effects::kDefaultLightMultiplier;
     bool      trace_lights             = false;
     bool      trace_light_reader       = false;
 };

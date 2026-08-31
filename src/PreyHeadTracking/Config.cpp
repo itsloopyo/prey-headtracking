@@ -154,7 +154,8 @@ std::vector<std::string> Config::Sanitize() {
     // A non-finite scale would reach the engine as a NaN beam quaternion, written
     // into a live entity through IEntity::SetPosRotScale. 0 turns the beam not at
     // all; past 5x it leaves the screen before the head has moved far.
-    Clamp(flashlight_scale, 0.0f, 5.0f, 1.5f, "[Camera] FlashlightScale", notes);
+    Clamp(flashlight_scale, 0.0f, cameraunlock::effects::kMaxLightMultiplier,
+          cameraunlock::effects::kDefaultLightMultiplier, "[Camera] FlashlightScale", notes);
     Clamp(local_smoothing,  0.0f, 1.0f, static_cast<float>(cameraunlock::math::kDefaultLocalSmoothing),
           "[Tracking] LocalSmoothing",  notes);
     Clamp(remote_smoothing, 0.0f, 1.0f, static_cast<float>(cameraunlock::math::kDefaultRemoteSmoothing),
