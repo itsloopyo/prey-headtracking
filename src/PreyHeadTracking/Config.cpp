@@ -155,15 +155,18 @@ std::vector<std::string> Config::Sanitize() {
     // into a live entity through IEntity::SetPosRotScale. 0 turns the beam not at
     // all; past 5x it leaves the screen before the head has moved far.
     Clamp(flashlight_scale, 0.0f, 5.0f, 1.5f, "[Camera] FlashlightScale", notes);
-    Clamp(local_smoothing,  0.0f, 1.0f, 0.0f,  "[Tracking] LocalSmoothing",  notes);
-    Clamp(remote_smoothing, 0.0f, 1.0f, 0.15f, "[Tracking] RemoteSmoothing", notes);
+    Clamp(local_smoothing,  0.0f, 1.0f, static_cast<float>(cameraunlock::math::kDefaultLocalSmoothing),
+          "[Tracking] LocalSmoothing",  notes);
+    Clamp(remote_smoothing, 0.0f, 1.0f, static_cast<float>(cameraunlock::math::kDefaultRemoteSmoothing),
+          "[Tracking] RemoteSmoothing", notes);
     Clamp(pos_sens_x, 0.0f, 5.0f, 1.0f, "[Position] SensitivityX", notes);
     Clamp(pos_sens_y, 0.0f, 5.0f, 1.0f, "[Position] SensitivityY", notes);
     Clamp(pos_sens_z, 0.0f, 5.0f, 1.0f, "[Position] SensitivityZ", notes);
-    Clamp(pos_limit_x,      0.01f, 0.5f, 0.30f, "[Position] LimitX",     notes);
-    Clamp(pos_limit_y,      0.01f, 0.5f, 0.20f, "[Position] LimitY",     notes);
-    Clamp(pos_limit_z,      0.01f, 0.5f, 0.40f, "[Position] LimitZ",     notes);
-    Clamp(pos_limit_z_back, 0.01f, 0.5f, 0.10f, "[Position] LimitZBack", notes);
+    constexpr cameraunlock::PositionSettings kPosDefaults{};
+    Clamp(pos_limit_x,      0.01f, 0.5f, kPosDefaults.limit_x,      "[Position] LimitX",     notes);
+    Clamp(pos_limit_y,      0.01f, 0.5f, kPosDefaults.limit_y,      "[Position] LimitY",     notes);
+    Clamp(pos_limit_z,      0.01f, 0.5f, kPosDefaults.limit_z,      "[Position] LimitZ",     notes);
+    Clamp(pos_limit_z_back, 0.01f, 0.5f, kPosDefaults.limit_z_back, "[Position] LimitZBack", notes);
     Clamp(pivot_forward, 0.0f, 0.5f, 0.0f, "[Position] PivotForward", notes);
     Clamp(pivot_up,      0.0f, 0.5f, 0.0f, "[Position] PivotUp",      notes);
     return notes;

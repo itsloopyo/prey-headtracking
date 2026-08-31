@@ -6,6 +6,7 @@
 
 #include "cameraunlock/data/tracking_pose.h"
 #include "cameraunlock/data/position_settings.h"
+#include "cameraunlock/math/smoothing_utils.h"
 
 namespace preyht {
 
@@ -26,8 +27,8 @@ struct Config {
     // Smoothing is chosen per connection: local for a tracker on this machine
     // (loopback), remote for a device on the network. Both cover rotation and
     // position.
-    float    local_smoothing  = 0.0f;
-    float    remote_smoothing = 0.15f;
+    float    local_smoothing  = static_cast<float>(cameraunlock::math::kDefaultLocalSmoothing);
+    float    remote_smoothing = static_cast<float>(cameraunlock::math::kDefaultRemoteSmoothing);
     float    deadzone      = 0.0f;
 
     // [Hotkeys] - nav-cluster virtual-key names matched by hotkey_poller.
@@ -138,10 +139,12 @@ struct Config {
     bool     invert_pos_x     = false;
     bool     invert_pos_y     = false;
     bool     invert_pos_z     = false;
-    float    pos_limit_x      = 0.30f;
-    float    pos_limit_y      = 0.20f;
-    float    pos_limit_z      = 0.40f;   // forward lean (generous)
-    float    pos_limit_z_back = 0.10f;   // backward lean (restricted, avoids clipping)
+    float    pos_limit_x      = cameraunlock::PositionSettings{}.limit_x;
+    float    pos_limit_y      = cameraunlock::PositionSettings{}.limit_y;
+    // forward lean (generous)
+    float    pos_limit_z      = cameraunlock::PositionSettings{}.limit_z;
+    // backward lean (restricted, avoids clipping)
+    float    pos_limit_z_back = cameraunlock::PositionSettings{}.limit_z_back;
     // Lever from the head's rotation pivot (in the neck) to the point the tracker
     // watches, in metres. Subtracts the translation that is only the head turning.
     // 0 disables it. See PivotForward / PivotUp in HeadTracking.ini.

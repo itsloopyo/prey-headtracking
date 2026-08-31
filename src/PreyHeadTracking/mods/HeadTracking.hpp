@@ -8,6 +8,7 @@
 
 #include "cameraunlock/data/tracking_pose.h"
 #include "cameraunlock/input/hotkey_poller.h"
+#include "cameraunlock/math/smoothing_utils.h"
 #include "cameraunlock/processing/pose_interpolator.h"
 #include "cameraunlock/processing/position_interpolator.h"
 #include "cameraunlock/processing/position_processor.h"
@@ -96,8 +97,8 @@ private:
     float m_pivotUp      = 0.0f;
 
     // Connection-selected smoothing, from config; the flag follows the receiver.
-    float m_localSmoothing = 0.0f;
-    float m_remoteSmoothing = 0.15f;
+    float m_localSmoothing = static_cast<float>(cameraunlock::math::kDefaultLocalSmoothing);
+    float m_remoteSmoothing = static_cast<float>(cameraunlock::math::kDefaultRemoteSmoothing);
     bool  m_isRemoteConnection = false;
     bool  m_loggedLocality = false;
 
