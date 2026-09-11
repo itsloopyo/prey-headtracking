@@ -6,8 +6,8 @@
     "game_id": "prey"
   },
   "strategy": "AsiLoader",
-  "delivery_mode": "manifest",
-
+  "$comment": "delivery_mode is install_cmd, not manifest, because the folder every file here goes in differs by edition: the Steam build keeps Prey.exe under Binaries/Danielle/x64/Release and the Xbox / PC Game Pass build under Binaries/Danielle/Gaming.Desktop.x64/Release. A files[] target is one static game-relative path, so it cannot name both, and install.cmd resolves the folder per install through find-game.ps1. The loader and files blocks below are descriptive only in this mode - they name the Steam layout, and the launcher does not read them. Do not flip this back to manifest without moving both editions into variants[].",
+  "delivery_mode": "install_cmd",
   "loader": {
     "seed": [
       {
@@ -16,7 +16,6 @@
       }
     ]
   },
-
   "files": [
     {
       "source": "vendor/ultimate-asi-loader/dinput8.dll",
@@ -28,7 +27,6 @@
       "target": "Binaries/Danielle/x64/Release/PreyHeadTracking.asi"
     }
   ],
-
   "runtime_requirements": [],
   "dependencies": []
 }

@@ -1000,6 +1000,14 @@ void InstallFlashlightHooks(uintptr_t base, const BuildProfile& profile, const C
                           "it lands on what you turned to look at rather than short of it.",
                     cfg.flashlight_scale);
         }
+    } else if (cfg.compensate_flashlight || cfg.trace_lights) {
+        // Saying nothing here leaves a log that differs between two builds of
+        // the same game with no explanation, which reads as the mod having
+        // half-loaded. The addresses are per-build and this one does not carry
+        // them; see the ArkLight note in the profile.
+        PHT_LOG(Info, "Flashlight tracking is off on this build: the addresses it needs are "
+                      "not in the %s profile. Everything else runs as normal.",
+                profile.name);
     }
 
     if (cfg.trace_lights && profile.add_dyn_light_rva != 0) {

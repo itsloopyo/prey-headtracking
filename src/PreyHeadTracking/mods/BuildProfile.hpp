@@ -12,7 +12,9 @@ namespace preyht {
 /// vtable slot offsets, so a patch that only relinks function bodies changes
 /// nothing here. Append-only across Prey patches (see "Maintain compatibility
 /// across new patches"): add a profile, never edit one, so a player who has not
-/// taken the patch keeps working.
+/// taken the patch keeps working. One file per store holds that store's
+/// profiles - steam_offsets.cpp, gdk_offsets.cpp - because a store variant is a
+/// separate binary with its own RVAs, not a label on a shared one.
 ///
 /// Campaign builds only - see the refused-build list.
 struct BuildProfile {

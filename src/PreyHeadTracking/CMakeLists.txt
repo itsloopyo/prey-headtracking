@@ -7,6 +7,8 @@ set(PREY_DLL_SOURCES
     mods/HeadTracking.cpp
     mods/CryEngineCamera.cpp
     mods/BuildProfile.cpp
+    mods/steam_offsets.cpp
+    mods/gdk_offsets.cpp
     utility/AimTrace.cpp
     utility/CameraMath.cpp
     utility/Flashlight.cpp

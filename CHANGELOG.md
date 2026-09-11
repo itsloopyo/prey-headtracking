@@ -6,6 +6,31 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- The Xbox / PC Game Pass edition is now supported. It is a separate binary
+  from the Steam one, not a repackaging of it: a 2023 recompile of the same
+  engine, installed under `XboxGames\Prey\Content` on whichever drive the Xbox
+  app put it on, with its exe and `PreyDll.dll` under
+  `Binaries\Danielle\Gaming.Desktop.x64\Release` rather than
+  `Binaries\Danielle\x64\Release`. The mod ships a build profile for it
+  alongside the Steam one and picks between them by fingerprinting the running
+  `PreyDll.dll`, so one download covers both and neither goes dormant because
+  of the other. Verified in game on the Game Pass build: head rotation, the
+  positional lean, the aim ray behind the crosshair compensation, the HUD
+  marker projection and the first-person body placement all engage.
+
+  Prey: Mooncrash and Typhon Hunter ship their own `PreyDll.dll` on Game Pass
+  as they do on Steam, and that binary is refused by fingerprint too.
+
+  The flashlight beam is the one feature the Game Pass profile leaves off. The
+  addresses it needs were never derived statically on any build, and on Steam
+  the beam does not follow the head anyway, so nothing visible differs between
+  the two editions.
+
+- `pixi run check-fingerprint` now reports every copy of Prey on the machine
+  rather than the first one detection returned, names the store each belongs
+  to, and says when a build already has a profile instead of printing a
+  re-derive stub for it.
+
 - Your own first-person body can now be carried with your head, on `Delete` or
   `Ctrl+Shift+J` (`[Camera] BodyFollowsHead`). The exterior sections put you in a
   space suit whose collar and shoulders fill the bottom of the screen, and they

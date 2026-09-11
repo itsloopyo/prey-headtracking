@@ -8,10 +8,11 @@ An unofficial head tracking mod for Prey (2017) that moves the view with your he
 
 - **Decoupled look and aim** - head tracking moves the camera; aim stays on your mouse/controller
 - **6DOF positional tracking** - lean and peek with head position
+- **Works with any OpenTrack compatible tracker** - free options available for PC, iOS and Android
 
 ## Requirements
 
-- [Prey (2017)](https://store.steampowered.com/app/480490/Prey/) by Arkane Studios, Steam edition, campaign build. Mooncrash and Typhon Hunter run from a separate `PreyDll.dll` that the mod does not recognize, so they render vanilla.
+- [Prey (2017)](https://store.steampowered.com/app/480490/Prey/) by Arkane Studios, campaign build. The Steam and Xbox / PC Game Pass editions are both supported; they are separate binaries and the mod carries a profile for each. Mooncrash and Typhon Hunter run from their own `PreyDll.dll` and are refused by design, so they render vanilla.
 - A tracking source that sends OpenTrack UDP pose data: [OpenTrack](https://github.com/opentrack/opentrack) with a webcam, phone app or VR headset.
 - Windows 10 or 11, 64-bit.
 
@@ -19,7 +20,7 @@ An unofficial head tracking mod for Prey (2017) that moves the view with your he
 
 1. Download the installer ZIP from the [Releases](https://github.com/itsloopyo/prey-headtracking/releases) page.
 2. Extract it anywhere.
-3. Double-click `install.cmd`. It places the Ultimate ASI Loader (`dinput8.dll`), `PreyHeadTracking.asi` and a default `HeadTracking.ini` next to `Prey.exe` in `Binaries\Danielle\x64\Release\`.
+3. Double-click `install.cmd`. It places the Ultimate ASI Loader (`dinput8.dll`), `PreyHeadTracking.asi` and a default `HeadTracking.ini` next to `Prey.exe`. That folder differs by edition - see [Where the files go](#where-the-files-go).
 4. Configure OpenTrack to output UDP to `127.0.0.1` port `4242` (see below).
 5. Launch the game.
 
@@ -36,11 +37,25 @@ or pass the path as an argument:
 .\install.cmd "D:\Games\Prey"
 ```
 
+### Where the files go
+
+All three files sit in the folder that holds `Prey.exe`, which is not the same
+folder on both editions:
+
+| Edition | Install root | Folder holding `Prey.exe` |
+|---------|--------------|---------------------------|
+| Steam | `...\steamapps\common\Prey` | `Binaries\Danielle\x64\Release\` |
+| Xbox / PC Game Pass | `...\XboxGames\Prey\Content` | `Binaries\Danielle\Gaming.Desktop.x64\Release\` |
+
+`install.cmd` finds both and picks the right folder for whichever copy it is
+installing into. If you own the game on both, run it once per copy and pass the
+path you want each time.
+
 ### Manual Installation
 
 Use the Nexus ZIP, which contains the deploy subtree only and no loader.
 
-1. Install the [Ultimate ASI Loader](https://github.com/ThirteenAG/Ultimate-ASI-Loader): put its DLL in `...\steamapps\common\Prey\Binaries\Danielle\x64\Release\` renamed to `dinput8.dll`. The installer ZIP carries a copy under `vendor\ultimate-asi-loader\`.
+1. Install the [Ultimate ASI Loader](https://github.com/ThirteenAG/Ultimate-ASI-Loader): put its DLL in the folder from the table above, renamed to `dinput8.dll`. The installer ZIP carries a copy under `vendor\ultimate-asi-loader\`.
 2. Copy `PreyHeadTracking.asi` into the same folder, next to `Prey.exe`.
 3. Copy `HeadTracking.ini` there as well if you want to change any settings. Without it the mod runs on the defaults that file ships with.
 
@@ -125,7 +140,7 @@ Two equivalent binding sets - use whichever your keyboard has:
 
 ## Configuration
 
-Edit `HeadTracking.ini` next to `Prey.exe` in `Binaries\Danielle\x64\Release\`. Neither `install.cmd` nor the launcher overwrites an INI that already exists, and uninstalling leaves it alone. Values outside their documented range are clamped, and the log says which ones moved.
+Edit `HeadTracking.ini` next to `Prey.exe` (see [Where the files go](#where-the-files-go) for that folder on each edition). Neither `install.cmd` nor the launcher overwrites an INI that already exists, and uninstalling leaves it alone. Values outside their documented range are clamped, and the log says which ones moved.
 
 ```ini
 [Network]
@@ -265,8 +280,8 @@ The shipped INI also carries several diagnostic keys, each commented in place. L
 
 **Mod not loading**
 
-- Check for `HeadTracking.log` next to `Prey.exe`. No log file at all means the ASI loader never ran: confirm `dinput8.dll` and `PreyHeadTracking.asi` are both in `Binaries\Danielle\x64\Release\`.
-- A log line saying the mod is staying dormant means your `PreyDll.dll` is not one of the builds this mod knows. The line says whether your game is newer or older than the newest build profile. Newer means the mod needs a new profile: open an issue with the fingerprint from that log line.
+- Check for `HeadTracking.log` next to `Prey.exe`. No log file at all means the ASI loader never ran: confirm `dinput8.dll` and `PreyHeadTracking.asi` are both in the folder listed for your edition under [Where the files go](#where-the-files-go). On Game Pass that folder is `Gaming.Desktop.x64`, not `x64`.
+- A log line saying the mod is staying dormant means your `PreyDll.dll` is not one of the builds this mod knows. The line says whether your game is newer or older than the newest build profile, and the working line names the profile that did match. Newer means the mod needs a new profile: open an issue with the fingerprint from that log line, and say which edition you are running.
 - Mooncrash and Typhon Hunter use their own `PreyDll.dll` and are refused by design.
 
 **No tracking response**
