@@ -10,6 +10,7 @@ platforms = ["win-64"]
 cmake = ">=3.28"
 
 [tasks]
+update-submodule = "git submodule update --remote cameraunlock-core && powershell -NoProfile -ExecutionPolicy Bypass -File cameraunlock-core/scripts/update-submodule.ps1"
 sync = { cmd = "git submodule update --remote cameraunlock-core" }
 # No -G: let CMake auto-detect the installed Visual Studio generator. Pinning
 # "Visual Studio 17 2022" broke on CI once the windows runner image moved to
