@@ -12,11 +12,18 @@ An unofficial head tracking mod for Prey (2017) that moves the view with your he
 
 ## Requirements
 
-- [Prey (2017)](https://store.steampowered.com/app/480490/Prey/) by Arkane Studios, campaign build. The Steam and Xbox / PC Game Pass editions are both supported; they are separate binaries and the mod carries a profile for each. Mooncrash and Typhon Hunter run from their own `PreyDll.dll` and are refused by design, so they render vanilla.
+- [Prey (2017)](https://store.steampowered.com/app/480490/Prey/) by Arkane Studios, campaign build. The Steam and Xbox Game Pass editions are both supported; they are separate binaries and the mod carries a profile for each. Mooncrash and Typhon Hunter run from their own `PreyDll.dll` and are refused by design, so they render vanilla.
 - A tracking source that sends OpenTrack UDP pose data: [OpenTrack](https://github.com/opentrack/opentrack) with a webcam, phone app or VR headset.
 - Windows 10 or 11, 64-bit.
 
 ## Installation
+
+### Lopari
+
+Download [Lopari](https://lopari.app), choose **Prey**, and click
+**Play with head tracking**.
+
+### Standalone Installer
 
 1. Download the installer ZIP from the [Releases](https://github.com/itsloopyo/prey-headtracking/releases) page.
 2. Extract it anywhere.
@@ -45,7 +52,7 @@ folder on both editions:
 | Edition | Install root | Folder holding `Prey.exe` |
 |---------|--------------|---------------------------|
 | Steam | `...\steamapps\common\Prey` | `Binaries\Danielle\x64\Release\` |
-| Xbox / PC Game Pass | `...\XboxGames\Prey\Content` | `Binaries\Danielle\Gaming.Desktop.x64\Release\` |
+| Xbox Game Pass | `...\XboxGames\Prey\Content` | `Binaries\Danielle\Gaming.Desktop.x64\Release\` |
 
 `install.cmd` finds both and picks the right folder for whichever copy it is
 installing into. If you own the game on both, run it once per copy and pass the
@@ -280,7 +287,7 @@ The shipped INI also carries several diagnostic keys, each commented in place. L
 
 **Mod not loading**
 
-- Check for `HeadTracking.log` next to `Prey.exe`. No log file at all means the ASI loader never ran: confirm `dinput8.dll` and `PreyHeadTracking.asi` are both in the folder listed for your edition under [Where the files go](#where-the-files-go). On Game Pass that folder is `Gaming.Desktop.x64`, not `x64`.
+- Check for `HeadTracking.log` next to `Prey.exe`. No log file at all means the ASI loader never ran: confirm `dinput8.dll` and `PreyHeadTracking.asi` are both in the folder listed for your edition under [Where the files go](#where-the-files-go). On Xbox Game Pass that folder is `Gaming.Desktop.x64`, not `x64`.
 - A log line saying the mod is staying dormant means your `PreyDll.dll` is not one of the builds this mod knows. The line says whether your game is newer or older than the newest build profile, and the working line names the profile that did match. Newer means the mod needs a new profile: open an issue with the fingerprint from that log line, and say which edition you are running.
 - Mooncrash and Typhon Hunter use their own `PreyDll.dll` and are refused by design.
 
