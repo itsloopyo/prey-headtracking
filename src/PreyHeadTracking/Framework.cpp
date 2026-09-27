@@ -34,16 +34,26 @@ bool Framework::Initialize() {
 
 bool Framework::DoInitialize() {
     // Config + logging come up first so everything else has a place to talk.
-    Config::LoadFromFile(Config::DefaultIniPathNextToHostExe(), m_config);
-    const auto clamped = m_config.Sanitize();
+    // The owner imports HeadTracking.ini and creates files, so it runs here, on
+    // the init thread, never in DllMain.
+    m_owner = std::make_unique<cameraunlock::config::ConfigOwner<Config>>(
+        OwnerOptions(ExeDirectory(), cameraunlock::config::DefaultsFile::PerUser(),
+                     [](const std::string& message) { Framework::Get().Status(message); }));
+    const auto loaded = m_owner->Load();
+    m_config = loaded.config;
     if (m_config.log_to_file) {
         log::Init(Config::ResolveLogPath(m_config.log_path));
     }
     PHT_LOG(Info, "%s %s starting up", kProductName, kVersion);
-    // Reported here rather than from the loader: the config is read before the
-    // log file exists, so anything logged in there would reach a debugger only.
-    for (const auto& msg : m_config.load_notes) PHT_LOG(Warn, "%s", msg.c_str());
-    for (const auto& msg : clamped)             PHT_LOG(Warn, "%s", msg.c_str());
+    // Written here rather than by the owner: the config is read before the log
+    // file exists.
+    for (const auto& line : loaded.log) log::Info(line);
+    {
+        std::lock_guard<std::mutex> lock(m_statusLock);
+        m_logOpen = true;
+        for (const auto& msg : m_pendingStatus) log::Warn(msg);
+        m_pendingStatus.clear();
+    }
 
     // MinHook is shared between cameraunlock_hooks and our D3D11 present hook.
     using cameraunlock::hooks::HookManager;
@@ -83,6 +93,20 @@ void Framework::Shutdown() {
     if (m_mods)  m_mods->Shutdown();
     cameraunlock::hooks::HookManager::Instance().Shutdown();
     log::Shutdown();
+}
+
+void Framework::Persist(const std::function<void(Config&)>& change) {
+    const auto saved = m_owner->Save(change);
+    for (const auto& line : saved.log) log::Info(line);
+}
+
+void Framework::Status(const std::string& message) {
+    std::lock_guard<std::mutex> lock(m_statusLock);
+    if (!m_logOpen) {
+        m_pendingStatus.push_back(message);
+        return;
+    }
+    log::Warn(message);
 }
 
 void Framework::OnFrame() {

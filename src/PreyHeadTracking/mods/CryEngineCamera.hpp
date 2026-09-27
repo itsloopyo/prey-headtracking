@@ -12,8 +12,8 @@ struct BuildProfile;
 /// It is wanted in the space suit sections, where the suit fills the bottom of
 /// the screen, and not wanted with a gun in hand, where Prey draws the weapon as
 /// part of the same object and it would follow the head too. That is a per
-/// section choice, so it is a key rather than a restart.
-void ToggleBodyFollowsHead();
+/// section choice, so it is a key rather than a restart. Returns the new state.
+bool ToggleBodyFollowsHead();
 
 /// Injects the processed OpenTrack head pose into Prey's rendered view.
 ///

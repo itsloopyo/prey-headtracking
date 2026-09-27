@@ -34,9 +34,6 @@ if (-not (Test-Path $releaseDir)) {
 $asiPath = Join-Path $projectDir "build/src/PreyHeadTracking/Release/PreyHeadTracking.asi"
 if (-not (Test-Path $asiPath)) { throw "PreyHeadTracking.asi not found at: $asiPath" }
 
-$iniPath = Join-Path $projectDir "HeadTracking.ini"
-if (-not (Test-Path $iniPath)) { throw "HeadTracking.ini not found at: $iniPath" }
-
 $vendorAsiDir = Join-Path $projectDir "vendor/ultimate-asi-loader"
 $vendorAsiDll = Join-Path $vendorAsiDir "dinput8.dll"
 if (-not (Test-Path $vendorAsiDll)) { throw "Bundled ASI loader missing: $vendorAsiDll" }
@@ -66,8 +63,6 @@ $pluginsDir = Join-Path $ghStagingDir "plugins"
 New-Item -ItemType Directory -Path $pluginsDir -Force | Out-Null
 Copy-Item $asiPath -Destination $pluginsDir -Force
 Write-Host "  plugins/PreyHeadTracking.asi" -ForegroundColor Green
-Copy-Item $iniPath -Destination $pluginsDir -Force
-Write-Host "  plugins/HeadTracking.ini" -ForegroundColor Green
 
 $ghVendorDir = Join-Path $ghStagingDir "vendor/ultimate-asi-loader"
 New-Item -ItemType Directory -Path $ghVendorDir -Force | Out-Null
@@ -87,14 +82,6 @@ Copy-LicenceNotices -StagingDir $ghStagingDir -ProjectRoot $projectDir `
 # truth is the CMakeLists project() declaration parsed above).
 $manifestSrc = Join-Path $projectDir "launcher-manifest.json"
 if (-not (Test-Path $manifestSrc)) { throw "launcher-manifest.json not found at: $manifestSrc" }
-
-# loader.seed is a base64 copy of HeadTracking.ini, and it is the config a
-# launcher-deployed user actually gets. The committed manifest is the
-# authoritative copy of it: reviewable, diffable and in git, where the blob
-# inside the ZIP is a build product. Refreshing the blob from disk here would
-# ship a correct ZIP over a stale committed file, so drift fails the build and
-# gets re-stamped in a commit instead.
-Assert-ManifestSeedsMatchShipped -ManifestPath $manifestSrc -ProjectRoot $projectDir
 
 $manifest = Get-Content $manifestSrc -Raw | ConvertFrom-Json
 $manifest.mod_info.version = $version
@@ -135,8 +122,6 @@ New-Item -ItemType Directory -Path $nexusGameDir -Force | Out-Null
 
 Copy-Item $asiPath -Destination $nexusGameDir -Force
 Write-Host "  Binaries/Danielle/x64/Release/PreyHeadTracking.asi" -ForegroundColor Green
-Copy-Item $iniPath -Destination $nexusGameDir -Force
-Write-Host "  Binaries/Danielle/x64/Release/HeadTracking.ini" -ForegroundColor Green
 
 # Nexus is the deploy subtree only - no vendored loader. Nexus users manage
 # their own ASI loader.

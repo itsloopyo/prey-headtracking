@@ -10,3 +10,5 @@
 # the config files it reads as inputs.
 tests/config_differential/oracle/published/** -text
 tests/config_differential/inputs/** -text
+# The committed canonical config, byte for byte as the table renders it (CRLF).
+HeadTracking.ini -text

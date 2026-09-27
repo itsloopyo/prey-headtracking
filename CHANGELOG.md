@@ -6,6 +6,13 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- A setting set to `default` in `CameraUnlock.ini` takes its value from `Defaults.ini`, which every head tracking mod that keeps its settings in `CameraUnlock.ini` reads. Head tracking mods that keep their settings in another file do not read it, and neither do earlier versions of this mod. Writing a value in place of `default` changes that setting for this game only. When the mod saves a setting that a hotkey changed in game, it writes the new value in place of `default`, so that setting no longer follows `Defaults.ini` in this game until you set it to `default` again.
+- `Defaults.ini` is `%AppData%\CameraUnlock\Defaults.ini` on Windows; `$XDG_CONFIG_HOME/CameraUnlock/Defaults.ini` on Linux, or `~/.config/CameraUnlock/Defaults.ini` where `XDG_CONFIG_HOME` is not set, under Wine and Proton too; and `~/Library/Application Support/CameraUnlock/Defaults.ini` on macOS. The mod's log, where it writes one, names the file it read.
+- When the mod starts and finds no `Defaults.ini`, it creates one holding the built-in values, unless Windows runs the game as a packaged app. The mod never changes `Defaults.ini` after that.
+- `[General] EnableOnStartup` says whether head tracking is on when the game starts. It is `true` by default, as tracking always started before.
+- The tracking mode (`Page Up` / `Ctrl+Shift+G`), the yaw mode (`Page Down` / `Ctrl+Shift+H`) and carrying your body with your head (`Delete` / `Ctrl+Shift+J`) save their new state to `CameraUnlock.ini` as soon as they change, so the next start comes back the same way. `End` does not save: tracking starts on or off as `EnableOnStartup` says.
+- The keys for stepping to the next tracker source (`CycleTrackerSourceKey`, `Ctrl+Shift+U`) and for carrying your body with your head (`BodyFollowsHeadKey`, `Delete, Ctrl+Shift+J`) can be rebound in `[Hotkeys]`, like every other hotkey.
+
 - The Xbox / PC Game Pass edition is now supported. It is a separate binary
   from the Steam one, not a repackaging of it: a 2023 recompile of the same
   engine, installed under `XboxGames\Prey\Content` on whichever drive the Xbox
@@ -169,6 +176,22 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Settings move to `CameraUnlock.ini`, next to `Prey.exe`. Earlier versions of the mod kept these settings in `HeadTracking.ini`, in the same folder. The first time this version starts and finds no `CameraUnlock.ini`, it reads your settings from `HeadTracking.ini` and writes them into `CameraUnlock.ini`. It never changes `HeadTracking.ini`, and does not read it again while `CameraUnlock.ini` exists.
+- A setting that the defaults the README shows set to `default` is written as `default` when you never changed it from the default earlier versions used, because `HeadTracking.ini` does not hold it or holds that default. It then follows `Defaults.ini`, so it takes the value `Defaults.ini` gives it, or the built-in value where `Defaults.ini` gives none, which can differ from the default earlier versions used. A setting you changed is written with the value imported for it, or as `default` where that value equals its default at that start.
+- `RotationEnabled` and `PositionEnabled` are one setting here, the tracking mode, so both are written as `default` or neither is. `[Position] Enabled=false` in `HeadTracking.ini` becomes the rotation-only tracking mode, as it started before.
+- Comments, and keys the mod never read, are not carried over. Nor are these, where your old file had them:
+  - A sensitivity, deadzone or axis inversion you changed from its default. Set these in your tracker instead.
+  - `[Camera] CompensateReticle`. The crosshair always follows your aim now.
+  - A neck pivot distance (`PivotForward`, `PivotUp`) you changed from its default. The neck pivot is not a setting now.
+  - A hotkey set to Ctrl, Shift or Alt on its own. That key goes down before the key of any chord made with it, so the hotkey is left unbound, and it keeps its Ctrl+Shift chord.
+  - A hotkey set to the key code `0xFF`. It is left unbound, and it keeps its Ctrl+Shift chord.
+- Some settings have new names in `CameraUnlock.ini`, and the import carries each one over: `[Hotkeys] PositionKey` is `CycleTrackingModeKey`, `[Camera] CompensateFlashlight` and `FlashlightScale` are `[Light] LightFollowsHead` and `LightMultiplier`, `[Tracking] LocalSmoothing` and `RemoteSmoothing` are under `[Smoothing]`, and the position limits are `PositionLimitX`, `PositionLimitY`, `PositionLimitZ` and `PositionLimitZBack`. `LimitY` was one limit applied both up and down, so its value is written to `PositionLimitY` and `PositionLimitYDown`, which can now differ.
+- An older version of the mod reads `HeadTracking.ini` and never reads `CameraUnlock.ini`, so a setting you change after updating is not in `HeadTracking.ini`.
+- Deleting only `CameraUnlock.ini` makes the next start read `HeadTracking.ini` again. To go back to the defaults, replace everything in `CameraUnlock.ini` with the defaults the README shows. Every setting they set to `default` then follows `Defaults.ini`.
+- Hotkeys are written as key names, and each hotkey lists every key that triggers it, the Ctrl+Shift chord included: `ToggleKey=End, Ctrl+Shift+Y`.
+- An install that has no `HeadTracking.ini` at all now projects the HUD markers through the head-tracked view, as the `HeadTracking.ini` every earlier release shipped already did.
+- The installer, the launcher and the Nexus ZIP no longer ship a config file. The mod creates `CameraUnlock.ini` the first time it starts, and uninstalling keeps it and `HeadTracking.ini`.
+
 - Renamed the log file to `HeadTracking.log`, matching the INI it sits next to.
   The previous session is still kept as `HeadTracking.prev.log`. An existing
   `[Logging] LogPath` in your INI still wins, so update it if you want the new
@@ -306,6 +329,11 @@ All notable changes to this project will be documented in this file.
   the installer and the launcher deliver it the same way.
 
 ### Removed
+
+- `[Camera] CompensateReticle`. Prey's own crosshair always follows your aim into the head-tracked view.
+- The neck pivot settings, `[Position] PivotForward` and `PivotUp`. A distance you changed from the default is not carried over.
+- The sensitivity, deadzone and axis inversion settings (`[Tracking] YawSensitivity`, `PitchSensitivity`, `RollSensitivity`, `InvertYaw`, `InvertPitch`, `InvertRoll`, `Deadzone` and `[Position] SensitivityX/Y/Z`, `InvertX/Y/Z`). Set these in your tracker app instead.
+- With these settings at their shipped defaults the camera moves as it did before.
 
 - Removed `[Camera] SetViewCameraRva` and `[Camera] MatrixOffset`. Both were
   per-build values that belong in the build profile, and a wrong `MatrixOffset`

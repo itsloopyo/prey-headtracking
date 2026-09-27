@@ -15,19 +15,21 @@ endif()
 
 add_test(NAME preyht_tests COMMAND preyht_tests)
 
-# The INI boundary is the other part that runs off the game: Config only reads a
-# file and clamps numbers, so what it lets through to the engine camera, the
-# engine's CVars and the socket bind is checkable here.
+# The config is the other part that runs off the game: the table, the owner that
+# reads and writes CameraUnlock.ini, the import of HeadTracking.ini and the frozen
+# reader behind it. `--render-config <path>` rewrites the committed file instead
+# of testing (pixi run render-config).
 add_executable(preyht_config_tests
     config_tests.cpp
     ${CMAKE_SOURCE_DIR}/src/PreyHeadTracking/Config.cpp
-    ${CMAKE_SOURCE_DIR}/src/PreyHeadTracking/legacy_config/legacy_config.cpp
+    ${CMAKE_SOURCE_DIR}/src/legacy_config/legacy_config.cpp
 )
 
 target_include_directories(preyht_config_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/include
-    ${CMAKE_SOURCE_DIR}/src/PreyHeadTracking
+    ${CMAKE_SOURCE_DIR}/src
 )
+target_compile_definitions(preyht_config_tests PRIVATE PREY_REPO_DIR="${CMAKE_SOURCE_DIR}")
 target_link_libraries(preyht_config_tests PRIVATE cameraunlock)
 
 if(MSVC)

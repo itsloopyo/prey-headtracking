@@ -27,7 +27,7 @@ Download [Lopari](https://lopari.app), choose **Prey**, and click
 
 1. Download the installer ZIP from the [Releases](https://github.com/itsloopyo/prey-headtracking/releases) page.
 2. Extract it anywhere.
-3. Double-click `install.cmd`. It places the Ultimate ASI Loader (`dinput8.dll`), `PreyHeadTracking.asi` and a default `HeadTracking.ini` next to `Prey.exe`. That folder differs by edition - see [Where the files go](#where-the-files-go).
+3. Double-click `install.cmd`. It places the Ultimate ASI Loader (`dinput8.dll`) and `PreyHeadTracking.asi` next to `Prey.exe`. That folder differs by edition - see [Where the files go](#where-the-files-go). The mod creates `CameraUnlock.ini` beside them the first time the game starts.
 4. Configure OpenTrack to output UDP to `127.0.0.1` port `4242` (see below).
 5. Launch the game.
 
@@ -46,8 +46,8 @@ or pass the path as an argument:
 
 ### Where the files go
 
-All three files sit in the folder that holds `Prey.exe`, which is not the same
-folder on both editions:
+The mod's files and `CameraUnlock.ini` sit in the folder that holds `Prey.exe`,
+which is not the same folder on both editions:
 
 | Edition | Install root | Folder holding `Prey.exe` |
 |---------|--------------|---------------------------|
@@ -64,7 +64,7 @@ Use the Nexus ZIP, which contains the deploy subtree only and no loader.
 
 1. Install the [Ultimate ASI Loader](https://github.com/ThirteenAG/Ultimate-ASI-Loader): put its DLL in the folder from the table above, renamed to `dinput8.dll`. The installer ZIP carries a copy under `vendor\ultimate-asi-loader\`.
 2. Copy `PreyHeadTracking.asi` into the same folder, next to `Prey.exe`.
-3. Copy `HeadTracking.ini` there as well if you want to change any settings. Without it the mod runs on the defaults that file ships with.
+3. Start the game once. The mod creates `CameraUnlock.ini` in that folder, and that is the file to edit (see [Configuration](#configuration)).
 
 ## Setting Up OpenTrack
 
@@ -141,147 +141,182 @@ Two equivalent binding sets - use whichever your keyboard has:
 
 `Page Up` / `Ctrl+Shift+G` cycles through full 6DOF tracking, rotation only, position only, and back to 6DOF.
 
-`Delete` / `Ctrl+Shift+J` turns off carrying your own body with your head. It is on by default and applies only while you are in the space suit: the suit's collar and shoulders turn with your head instead of staying where your character is facing, so you look around INSIDE the suit rather than across it. Prey draws the item in your hands as part of the same object, so in the suit that follows your head too; on foot the mod leaves the body - and the gun - alone, so the barrel keeps pointing at the crosshair.
+The tracking mode, the yaw mode and the body key save their new state to `CameraUnlock.ini` as soon as they change, so the next start comes back the same way. `End` does not: tracking starts on or off as `EnableOnStartup` says. Every key here can be rebound in `CameraUnlock.ini` (see [Configuration](#configuration)).
+
+`Delete` / `Ctrl+Shift+J` turns carrying your own body with your head on or off. It is on by default and applies only while you are in the space suit: the suit's collar and shoulders turn with your head instead of staying where your character is facing, so you look around INSIDE the suit rather than across it. Prey draws the item in your hands as part of the same object, so in the suit that follows your head too; on foot the mod leaves the body - and the gun - alone, so the barrel keeps pointing at the crosshair.
 
 `Ctrl+Shift+U` is for when more than one app is sending to the port. The mod follows one of them and ignores the rest, and which one it picks is decided by whichever packet arrives first after the game starts. Press it until the view answers your head.
 
 ## Configuration
 
-Edit `HeadTracking.ini` next to `Prey.exe` (see [Where the files go](#where-the-files-go) for that folder on each edition). Neither `install.cmd` nor the launcher overwrites an INI that already exists, and uninstalling leaves it alone. Values outside their documented range are clamped, and the log says which ones moved.
+<!-- cameraunlock:config -->
+The mod reads its settings from `CameraUnlock.ini` in the game folder, at one of these paths depending on the store the game came from:
+
+- `Binaries\Danielle\x64\Release\CameraUnlock.ini`
+- `Binaries\Danielle\Gaming.Desktop.x64\Release\CameraUnlock.ini`
+
+It creates the file when it starts and finds none. Edit it with any text editor.
+
+A setting set to `default` takes its value from `Defaults.ini`, which every head tracking mod that keeps its settings in `CameraUnlock.ini` reads. Head tracking mods that keep their settings in another file do not read it. Writing a value in place of `default` changes that setting for this game only. When the mod saves a setting that a hotkey changed in game, it writes the new value in place of `default`, so that setting no longer follows `Defaults.ini` in this game until you set it to `default` again.
+
+`Defaults.ini` is `%AppData%\CameraUnlock\Defaults.ini` on Windows; `$XDG_CONFIG_HOME/CameraUnlock/Defaults.ini` on Linux, or `~/.config/CameraUnlock/Defaults.ini` where `XDG_CONFIG_HOME` is not set, under Wine and Proton too; and `~/Library/Application Support/CameraUnlock/Defaults.ini` on macOS. The mod's log, where it writes one, names the file it read.
+
+When the mod starts and finds no `Defaults.ini`, it creates one holding the built-in values, unless Windows runs the game as a packaged app. The mod never changes `Defaults.ini` after that. Edit it with any text editor.
+
+The built-in value of each setting set to `default` below:
+
+- `UdpPort=4242`
+- `EnableOnStartup=true`
+- `WorldSpaceYaw=true`
+- `RotationEnabled=true`
+- `LocalSmoothing=0.0`
+- `RemoteSmoothing=0.15`
+- `PositionEnabled=true`
+- `PositionLimitX=0.3`
+- `PositionLimitY=0.2`
+- `PositionLimitYDown=0.2`
+- `PositionLimitZ=0.4`
+- `PositionLimitZBack=0.1`
+- `ToggleKey=End, Ctrl+Shift+Y`
+- `CycleTrackingModeKey=PageUp, Ctrl+Shift+G`
+- `YawModeKey=PageDown, Ctrl+Shift+H`
+- `LightFollowsHead=true`
+- `LightMultiplier=1.5`
+
+With every setting at its default, the file reads:
 
 ```ini
+; Prey head tracking settings.
+; Comments start with ; and go on their own line. Text after a value is part of the value.
+; Hotkeys are key names such as End, PageUp or Ctrl+Shift+Y. Separate several with commas; leave empty for none.
+; A setting set to default takes its value from Defaults.ini, which every head tracking mod
+; that keeps its settings in CameraUnlock.ini reads: %AppData%\CameraUnlock\Defaults.ini on
+; Windows, $XDG_CONFIG_HOME/CameraUnlock/Defaults.ini (normally ~/.config/CameraUnlock) on
+; Linux, under Wine and Proton too, and ~/Library/Application Support/CameraUnlock/Defaults.ini
+; on macOS. The log names the file it read. Write a value instead of default to change that
+; setting for this game only.
+
+[CameraUnlock]
+; Written by the mod. Leave this section in place.
+ConfigFormat=1
+
 [Network]
-; UDP port the OpenTrack-compatible tracker sends to. Must be 1024-65535.
-UdpPort = 4242
+; UDP port the mod receives tracker data on (OpenTrack protocol).
+UdpPort=default
 
-[Tracking]
-; Per-axis sensitivity. 1.0 = 1:1 with tracker.
-YawSensitivity   = 1.0
-PitchSensitivity = 1.0
-RollSensitivity  = 1.0
+[General]
+; true: head tracking is on when the game starts. ToggleKey turns it on and off.
+EnableOnStartup=default
+; true locks head yaw to the world's up axis, so the horizon stays level
+; at any pitch. false turns about the camera's own up axis. In the space
+; suit yaw is always the camera's own, since floating has no stable up.
+WorldSpaceYaw=default
+; true: turning your head turns the view.
+; Tracking mode at startup, with PositionEnabled. The mode hotkey changes both.
+RotationEnabled=default
 
-; Per-axis inversion. Tune these in-game if an axis moves the wrong way.
-InvertYaw   = false
-InvertPitch = false
-InvertRoll  = false
-
-; Deadzone in degrees, applied to all axes. 0 = off.
-Deadzone = 0.0
-
-; Smoothing is picked per connection from the tracker's source address, and
-; covers rotation and position. 0 = lightest, 1 = heavy.
-; LocalSmoothing applies when the tracker sends from this machine (loopback).
-LocalSmoothing  = 0.0
-; RemoteSmoothing applies to a remote device on the network, such as a phone.
-RemoteSmoothing = 0.15
-
-[Hotkeys]
-; Win32 VK names, or a numeric VK like 0x22. The Ctrl+Shift+Y/G/H chords are
-; baked into the poller for keyboards without a nav cluster.
-ToggleKey   = End
-YawModeKey  = PageDown
-PositionKey = PageUp
-
-[Camera]
-; true (default) = horizon-locked: head-yaw rotates around the world up-axis,
-; so "up" stays constant. false = around the camera's own up-axis, which leans
-; the view at extreme pitch. Toggle live with PageDown.
-WorldSpaceYaw = true
-
-; Move Prey's own crosshair to the spot in the head-tracked view your
-; mouse-controlled aim points at, so shots land where the crosshair is drawn.
-; Prey's interaction prompt is drawn at the crosshair and follows it.
-CompensateReticle = true
-
-; Project world-anchored HUD markers (objective markers, interactable diamonds)
-; through the head-tracked view so they stay on their objects.
-CompensateMarkers = true
-
-; Horizontal field of view in degrees. 0 (default) leaves Prey's own Field of
-; View slider in charge. Any other value in 25-170 is written straight into the
-; engine every frame, which skips the game's 120-degree clamp and overrides the
-; slider until you set this back to 0.
-FieldOfView = 0
-
-; Draw the gun in your hands through the same lens as the world. Prey renders
-; held weapons in a separate pass with its own field of view, fixed at the
-; default Field of View slider's value, so raising the slider magnifies the
-; weapon. That is invisible until head tracking leaves the gun on your body
-; while the view turns, at which point the gun sweeps further across the screen
-; than the world and the barrel stops pointing at the crosshair. At the default
-; slider this changes nothing; above it the gun is drawn smaller.
-MatchWeaponFieldOfView = true
-
-; Inject the head pose when the game sets the view camera rather than only for
-; the render, so culling and the HUD see it too. Without this, geometry is
-; culled out of the view when you turn your head.
-EarlyInject = true
-
-; Turn off Prey's software occlusion culling. It is built from a camera the mod
-; cannot reach, so it culls the head-turned view against the un-turned one and
-; geometry vanishes at the edge of a head turn.
-DisableCoverageBuffer = true
-
-; Keep the player's own first-person body on the body. Prey builds its render
-; object from the view camera, so without this it swings with your head.
-CompensateBody = true
-
-; Carry your own first-person body with your head - the space suit fix. On by
-; default, and only ever applied while the suit is on. Delete or Ctrl+Shift+J
-; turns it off in game. See Controls.
-BodyFollowsHead = true
-
-; Turn the flashlight beam with your head. It turns further than the view does,
-; because when you turn your head your eyes end up past the centre of the
-; screen. 1.0 matches the view exactly, 0 leaves the beam where the game put it.
-; Needs EarlyInject = true.
-CompensateFlashlight = true
-FlashlightScale = 1.5
+[Smoothing]
+; Smoothing when the tracker runs on this PC. 0 is the least, 1 the most.
+LocalSmoothing=default
+; Smoothing when the tracker is another device on the network, such as a phone.
+; 0 is the least, 1 the most.
+RemoteSmoothing=default
 
 [Position]
-; 6DOF positional tracking. The head offset is added to the rendered camera
-; position only. This key is the startup state; PageUp cycles it live.
-Enabled = true
+; true: moving your head moves the view.
+; Tracking mode at startup, with RotationEnabled. The mode hotkey changes both.
+PositionEnabled=default
+; How far, in metres, leaning left or right can move the view.
+PositionLimitX=default
+; How far, in metres, raising your head can move the view.
+PositionLimitY=default
+; How far, in metres, lowering your head can move the view.
+PositionLimitYDown=default
+; How far, in metres, leaning forward can move the view.
+PositionLimitZ=default
+; How far, in metres, leaning back can move the view.
+PositionLimitZBack=default
 
-; Per-axis sensitivity. X = sway (left/right), Y = heave (up/down),
-; Z = surge (forward/back).
-SensitivityX = 1.0
-SensitivityY = 1.0
-SensitivityZ = 1.0
+[Hotkeys]
+; Turns head tracking on and off.
+ToggleKey=default
+; Changes the tracking mode: rotation and position, rotation only, position only.
+CycleTrackingModeKey=default
+; Switches yaw between the world's up axis and the camera's own (WorldSpaceYaw).
+YawModeKey=default
+; Steps to the next app sending to the tracker port, when one you are not
+; using got there first and holds it.
+CycleTrackerSourceKey=Ctrl+Shift+U
+; Turns BodyFollowsHead on or off, and saves it.
+BodyFollowsHeadKey=Delete, Ctrl+Shift+J
 
-; Per-axis inversion, for a tracker whose axis runs the other way.
-InvertX = false
-InvertY = false
-; InvertZ is for a tracker that sends depth backwards, not for a lean that
-; feels reversed. It is applied before the LimitZ / LimitZBack clamp, so
-; turning it on also swaps the travel budgets to 0.10m forward and 0.40m back.
-InvertZ = false
+[Light]
+; true: a light you carry points where you look instead of where you aim.
+LightFollowsHead=default
+; How far the light turns for each degree your head turns.
+; 1 matches the view, 0 keeps the light on your aim.
+LightMultiplier=default
 
-; Travel limits in meters. Z is asymmetric: more range forward (LimitZ) than
-; backward (LimitZBack) so leaning back does not clip through the player.
-LimitX     = 0.30
-LimitY     = 0.20
-LimitZ     = 0.40
-LimitZBack = 0.10
-
-; Distance in meters from the pivot in your neck to the point your tracker
-; watches: PivotForward towards your face, PivotUp above the pivot. 0 (default)
-; leaves the correction off, which is right for a tracker that already does it.
-; If pitching your head up walks the camera backwards out of your character,
-; start at PivotForward = 0.10, PivotUp = 0.03 and raise PivotForward until the
-; swing stops.
-PivotForward = 0.0
-PivotUp      = 0.0
+[Camera]
+; Project the world-anchored HUD markers (objective markers, interactable
+; diamonds) through the head-tracked view so they stay on their objects.
+CompensateMarkers=true
+; Horizontal field of view in degrees. 0 leaves Prey's own Field of View
+; slider in charge. 25 to 170 is written straight into the engine, past the
+; slider's 120 limit, and holds while it is set.
+FieldOfView=0.0
+; Draw the gun in your hands through the same lens as the world, so the
+; barrel and the crosshair agree when the head turns. false leaves Prey's
+; own weapon field of view alone.
+MatchWeaponFieldOfView=true
+; Apply the head pose when the game sets the view camera, so culling, the
+; HUD and the flashlight see it too. false only turns the rendered image.
+EarlyInject=true
+; Turn off Prey's software occlusion culling, which culls a head-turned view
+; against the un-turned one so geometry vanishes at the edge of a turn.
+DisableCoverageBuffer=true
+; Build the first-person body from the game's own camera, so it does not
+; swing across the screen at twice the head's rotation.
+CompensateBody=true
+; Carry the space suit's collar and shoulders with your head while the suit
+; is on. BodyFollowsHeadKey turns it on or off in game and saves it.
+BodyFollowsHead=true
+; Diagnostic: log the view camera and the crosshair projection twice a
+; second. Off for play.
+DumpCamera=false
+; Diagnostic: sample the render node the body is drawn from. Off for play.
+TraceBodyNodes=false
+; Diagnostic: draw nothing for the body's render node. Off for play.
+HideBodyNodes=false
+; Diagnostic: force the flashlight on regardless of save progress.
+ForceFlashlight=false
+; Diagnostic: log each distinct dynamic light once. Off for play.
+TraceLights=false
+; Diagnostic: report every instruction that reads the flashlight's
+; intensity. Off for play.
+TraceLightReader=false
+; Diagnostic: log every distinct caller of the engine's view-camera getter
+; once, as an address. Off for play.
+TraceCameraReaders=false
+; Diagnostic: the address of one view-camera reader to hand the clean
+; camera to. 0x0 hands it to none.
+; CleanCameraForReader=0x0
+; Diagnostic: the upper end of a range of reader addresses, for bisecting.
+; 0x0 matches the one address above.
+; CleanCameraReaderEnd=0x0
 
 [Logging]
-; The log is written next to Prey.exe and starts empty on every launch. The
-; previous session is kept alongside it as HeadTracking.prev.log, which is the
-; one to send after a crash.
-LogToFile = true
-LogPath   = HeadTracking.log
+; Write HeadTracking.log next to Prey.exe. It starts empty at every launch,
+; and the previous session is kept as HeadTracking.prev.log.
+LogToFile=true
+; The log file, relative to the folder Prey.exe is in, or a full path.
+LogPath=HeadTracking.log
 ```
+<!-- /cameraunlock:config -->
 
-The shipped INI also carries several diagnostic keys, each commented in place. Leave them off for normal play.
+There is deliberately no sensitivity, deadzone or axis-inversion setting. Shape
+the pose in your tracker app instead, so one profile behaves the same in every
+game.
 
 ## Troubleshooting
 
@@ -305,8 +340,7 @@ The shipped INI also carries several diagnostic keys, each commented in place. L
 
 **Wrong rotation axis**
 
-- Flip the matching `InvertYaw` / `InvertPitch` / `InvertRoll` in the INI, or `InvertX` / `InvertY` for position.
-- `InvertZ` is for a tracker that sends depth backwards, not for a lean that feels reversed. It is applied before the `LimitZ` / `LimitZBack` clamp, so switching it on also swaps the travel budgets to 0.10m forward and 0.40m back.
+- The mod has no inversion settings. If an axis moves the wrong way, invert it in your tracker app.
 - If the view sits off to one side, center it in your tracker app.
 - If yaw feels wrong when you look far up or down, toggle the yaw mode with `Page Down`.
 
@@ -316,7 +350,7 @@ Download the new release and run `install.cmd` again. Your config is preserved.
 
 ## Uninstalling
 
-Run `uninstall.cmd`. This removes the mod DLLs. The Ultimate ASI Loader is only removed if the installer put it there. Use `uninstall.cmd /force` to remove it anyway.
+Run `uninstall.cmd`. This removes the mod DLLs and leaves `CameraUnlock.ini` and any `HeadTracking.ini` in place. The Ultimate ASI Loader is only removed if the installer put it there. Use `uninstall.cmd /force` to remove it anyway.
 
 ## Building from Source
 

@@ -14,6 +14,7 @@
 #include "cameraunlock/processing/position_processor.h"
 #include "cameraunlock/processing/tracking_processor.h"
 #include "cameraunlock/protocol/udp_receiver.h"
+#include "cameraunlock/tracking/tracking_mode.h"
 
 namespace preyht {
 
@@ -50,19 +51,15 @@ public:
     // tracking" report, and silence there reads identically to a broken hook.
     void SetEnabled(bool e);
 
-    /// Which degrees of freedom are live. PageUp / Ctrl+Shift+G cycles these.
-    enum class DofMode {
-        SixDof,        // rotation + position
-        RotationOnly,  // 3DOF: head rotation only
-        PositionOnly,  // 3DOF: head position only
-    };
-    DofMode GetDofMode() const { return m_dofMode.load(std::memory_order_acquire); }
-    bool PositionEnabled() const { return GetDofMode() != DofMode::RotationOnly; }
-    bool RotationEnabled() const { return GetDofMode() != DofMode::PositionOnly; }
+    /// Which degrees of freedom are live. The cycle key walks all three and saves
+    /// the mode.
+    cameraunlock::TrackingMode GetTrackingMode() const { return m_mode.load(std::memory_order_acquire); }
+    bool PositionEnabled() const { return GetTrackingMode() != cameraunlock::TrackingMode::RotationOnly; }
+    bool RotationEnabled() const { return GetTrackingMode() != cameraunlock::TrackingMode::PositionOnly; }
     /// Cycle 6DOF -> rotation-only -> position-only -> 6DOF.
-    void CycleDofMode();
+    void CycleTrackingMode();
 
-    /// Step to the next app sending to the tracker port. Ctrl+Shift+U.
+    /// Step to the next app sending to the tracker port.
     void CycleTrackerSource();
 
     /// true = horizon-locked (world up) yaw; false = camera-local yaw.
@@ -91,11 +88,6 @@ private:
     int64_t m_lastSampleTs = 0;
     bool    m_wasReceiving = false;
 
-    // Lever from the head's rotation pivot to the point the tracker watches,
-    // metres. Zero disables the correction.
-    float m_pivotForward = 0.0f;
-    float m_pivotUp      = 0.0f;
-
     // Connection-selected smoothing, from config; the flag follows the receiver.
     float m_localSmoothing = static_cast<float>(cameraunlock::math::kDefaultLocalSmoothing);
     float m_remoteSmoothing = static_cast<float>(cameraunlock::math::kDefaultRemoteSmoothing);
@@ -104,7 +96,7 @@ private:
 
     std::atomic<bool> m_enabled{true};
     std::atomic<bool> m_worldSpaceYaw{true};   // initialized from config at startup
-    std::atomic<DofMode> m_dofMode{DofMode::SixDof};  // initialized from config at startup
+    std::atomic<cameraunlock::TrackingMode> m_mode{cameraunlock::TrackingMode::RotationAndPosition};  // from config at startup
 
     // Latest processed pose, published from OnFrame.
     std::atomic<float>   m_outYaw  {0.0f};

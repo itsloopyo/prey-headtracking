@@ -17,12 +17,12 @@ set "MOD_INTERNAL_NAME=PreyHeadTracking"
 set "STATE_FILE=.headtracking-state.json"
 set "FRAMEWORK_TYPE=ASILoader"
 set "LEGACY_DLLS=HeadTracking.log HeadTracking.prev.log PreyHeadTracking.log PreyHeadTracking.prev.log"
-set "MOD_SEED_FILES=HeadTracking.ini"
+set "MOD_SEED_FILES="
 :: Config files the uninstall leaves in place so the player's settings survive a
 :: reinstall: paths relative to the game folder, quoted when one holds a space.
 :: Keep the line when it is blank, or the list another mod's uninstall.cmd set
 :: in the same console is used instead.
-set "PRESERVE_FILES="
+set "PRESERVE_FILES=Binaries\Danielle\x64\Release\CameraUnlock.ini Binaries\Danielle\x64\Release\HeadTracking.ini Binaries\Danielle\Gaming.Desktop.x64\Release\CameraUnlock.ini Binaries\Danielle\Gaming.Desktop.x64\Release\HeadTracking.ini"
 set "PLUGIN_SUBFOLDER="
 set "MANAGED_SUBFOLDER="
 set "ASSEMBLY_DLL="

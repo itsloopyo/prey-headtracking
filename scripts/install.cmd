@@ -28,7 +28,7 @@ set "ASI_SUBDIR="
 :: Files copied only when they are not already there, so an upgrade keeps
 :: whatever the user tuned. Listing an .ini in MOD_DLLS instead puts it through
 :: the unconditional copy and resets every key on every update.
-set "MOD_SEED_FILES=HeadTracking.ini"
+set "MOD_SEED_FILES="
 :: Version of the vendored Ultimate ASI Loader, recorded in the state file so
 :: the launcher can tell which loader build it is looking at. Leave empty to
 :: omit the field. Bump alongside vendor/ via `pixi run update-deps`.

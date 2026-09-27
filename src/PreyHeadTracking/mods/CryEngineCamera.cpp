@@ -947,8 +947,8 @@ void BindGameCVars(uintptr_t base, const BuildProfile& profile, const Config& cf
     cvars::Bind(b);
 }
 
-void BindReticle(uintptr_t base, const BuildProfile& profile, const Config& cfg) {
-    if (!cfg.compensate_reticle || !profile.HasReticlePath()) return;
+void BindReticle(uintptr_t base, const BuildProfile& profile) {
+    if (!profile.HasReticlePath()) return;
 
     hud::Binding binding;
     binding.get_element   = base + profile.hud_element_rva;
@@ -980,7 +980,7 @@ void BindReticle(uintptr_t base, const BuildProfile& profile, const Config& cfg)
 /// never moves.
 void InstallFlashlightHooks(uintptr_t base, const BuildProfile& profile, const Config& cfg) {
     if (cfg.compensate_flashlight && !g_earlyInject.load(std::memory_order_acquire)) {
-        PHT_LOG(Warn, "CompensateFlashlight is on but early injection is not, so the beam has "
+        PHT_LOG(Warn, "LightFollowsHead is on but early injection is not, so the beam has "
                       "no point in the frame to be turned from and will follow the mouse. Set "
                       "EarlyInject = true to get it back.");
     }
@@ -1236,18 +1236,19 @@ bool InstallHudHooks(uintptr_t base, const BuildProfile& profile, const Config& 
 
 }  // namespace
 
-void ToggleBodyFollowsHead() {
+bool ToggleBodyFollowsHead() {
     const bool follows = !g_bodyFollowsHead.load(std::memory_order_relaxed);
     g_bodyFollowsHead.store(follows, std::memory_order_relaxed);
 
     if (g_origEntityRender.load(std::memory_order_relaxed) == nullptr) {
         PHT_LOG(Warn, "The first-person body cannot be moved on this build - the render hook is "
                       "not live - so this key does nothing.");
-        return;
+        return follows;
     }
     PHT_LOG(Info, "First-person body %s.",
             follows ? "now follows the head: the suit turns with you, and the held item with it"
                     : "left where the character is facing, which is how the game draws it");
+    return follows;
 }
 
 std::optional<std::string> CryEngineCamera::OnInitialize() {
@@ -1320,7 +1321,7 @@ bool CryEngineCamera::InstallHook() {
     const auto& cfg = Framework::Get().Cfg();
     BindEngineState(base, *profile, engine);
     BindGameCVars(base, *profile, cfg);
-    BindReticle(base, *profile, cfg);
+    BindReticle(base, *profile);
     InstallCameraReaderHook(*profile, cfg, engine.get_view_camera);
 
     if (!InstallRenderHook(base, *profile, engine.render_fn, &m_tracking)) {

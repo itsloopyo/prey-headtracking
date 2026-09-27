@@ -115,6 +115,11 @@ if (-not (Test-SemanticVersion $Version)) {
     exit 1
 }
 
+# The manifest's canonical_since is the first version that reads CameraUnlock.ini,
+# so a release below it would ship the new config under an older number. Checked
+# before anything is written.
+Assert-ReleaseNotBelowCanonicalSince -RepoRoot $projectDir -Version $Version
+
 $tagName = "v$Version"
 
 $currentBranch = git rev-parse --abbrev-ref HEAD

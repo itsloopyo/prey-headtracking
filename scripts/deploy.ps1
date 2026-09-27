@@ -1,7 +1,8 @@
 #!/usr/bin/env pwsh
 #Requires -Version 5.1
-# Dev deploy: copy the freshly built PreyHeadTracking.asi + HeadTracking.ini
-# into a detected Prey install. Game-path detection (env var -> Steam ->
+# Dev deploy: copy the freshly built PreyHeadTracking.asi into a detected Prey
+# install. No config is copied: the mod creates CameraUnlock.ini at first launch
+# and imports an existing HeadTracking.ini into it. Game-path detection (env var -> Steam ->
 # games.json -> positional arg) matches install.cmd via GamePathDetection.psm1.
 # No prompts; exits non-zero if detection or the build artifact is missing.
 
@@ -26,7 +27,6 @@ Import-Module (Join-Path $projectRoot "cameraunlock-core\powershell\DevDeploy.ps
 Import-Module (Join-Path $projectRoot "cameraunlock-core\powershell\ModDeployment.psm1") -Force
 
 $buildOutput  = Join-Path $projectRoot "build\src\PreyHeadTracking\$Configuration"
-$configFile   = Join-Path $projectRoot 'HeadTracking.ini'
 $vendorLoader = Join-Path $projectRoot 'vendor\ultimate-asi-loader\dinput8.dll'
 
 $result = Invoke-DevDeployASILoader `
@@ -34,7 +34,6 @@ $result = Invoke-DevDeployASILoader `
     -GameDisplayName 'Prey' `
     -BuildOutputPath $buildOutput `
     -ModDllName 'PreyHeadTracking.asi' `
-    -ConfigFile $configFile `
     -VendorLoaderDll $vendorLoader `
     -AsiLoaderName 'dinput8.dll' `
     -ExtraDlls @() `

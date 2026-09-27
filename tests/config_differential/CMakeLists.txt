@@ -1,6 +1,7 @@
 # The differential test: the published build's reader (oracle/), the frozen
-# reader in src/PreyHeadTracking/legacy_config/, and every input the corpus
-# generator makes from the published build's shipped HeadTracking.ini.
+# reader in src/legacy_config/ with the import that maps it, the
+# config owner's migration, and every input the corpus generator makes from the
+# published build's shipped HeadTracking.ini.
 #
 # The oracle is compiled from published/ with `cameraunlock` and `preyht` renamed
 # by the preprocessor. It needs core as it stood at the published build's pin,
@@ -26,11 +27,12 @@ endif()
 
 add_executable(prey_config_differential
     differential_tests.cpp
-    ${CMAKE_SOURCE_DIR}/src/PreyHeadTracking/legacy_config/legacy_config.cpp
+    ${CMAKE_SOURCE_DIR}/src/PreyHeadTracking/Config.cpp
+    ${CMAKE_SOURCE_DIR}/src/legacy_config/legacy_config.cpp
 )
 target_include_directories(prey_config_differential PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_SOURCE_DIR}/src/PreyHeadTracking
+    ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/cameraunlock-core/cpp/include
 )
@@ -44,3 +46,11 @@ if(MSVC)
 endif()
 
 add_test(NAME config_differential COMMAND prey_config_differential)
+
+# Core's canonical config lint over the committed file and every file the
+# differential test migrated, which it writes beside itself under migrated\.
+add_test(NAME config_lint COMMAND node
+    ${CMAKE_CURRENT_SOURCE_DIR}/lint-migrated.mjs
+    $<TARGET_FILE_DIR:prey_config_differential>/migrated)
+set_tests_properties(config_lint PROPERTIES DEPENDS config_differential)
+set_tests_properties(config_differential PROPERTIES TIMEOUT 3600)

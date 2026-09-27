@@ -3,7 +3,7 @@ set(PREY_DLL_SOURCES
     Framework.cpp
     Mods.cpp
     Config.cpp
-    legacy_config/legacy_config.cpp
+    ${CMAKE_SOURCE_DIR}/src/legacy_config/legacy_config.cpp
     hooks/D3D11Hook.cpp
     mods/HeadTracking.cpp
     mods/CryEngineCamera.cpp
@@ -32,6 +32,7 @@ set_target_properties(PreyHeadTracking PROPERTIES
 target_include_directories(PreyHeadTracking
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_SOURCE_DIR}/src
         ${CMAKE_SOURCE_DIR}/include
 )
 

@@ -4,87 +4,64 @@
 #include "Framework.hpp"
 #include "utility/Logging.hpp"
 
-#include "cameraunlock/input/chord_hotkeys.h"
+#include "cameraunlock/input/key_binding_registration.h"
+#include "cameraunlock/input/key_bindings.h"
 #include "cameraunlock/math/smoothing_utils.h"
 
-#include <cctype>
 #include <cmath>
-#include <cstdlib>
+#include <stdexcept>
+#include <string>
+#include <vector>
 
 #include <windows.h>
 
 namespace preyht {
 
 namespace {
-/// Map a friendly key name from HeadTracking.ini to a Win32 VK_ code.
-/// Handles "F1".."F24", single A-Z/0-9, and a few common names.
-int ParseVk(const std::string& name) {
-    using namespace cameraunlock::input;
-    if (name.empty()) return 0;
-
-    std::string n;
-    n.reserve(name.size());
-    for (char c : name) n.push_back(static_cast<char>(std::toupper(static_cast<unsigned char>(c))));
-
-    // A lone digit is the key of that name, not a VK code: "5" must bind the 5
-    // key (0x35), and reading it as VK 0x05 silently bound XBUTTON2 instead.
-    if (n.size() == 1 && n[0] >= '0' && n[0] <= '9') return n[0];
-
-    // Numeric VK literal, e.g. "0x22" or "34" (base 0 honours the 0x prefix).
-    if (std::isdigit(static_cast<unsigned char>(n[0]))) {
-        int v = static_cast<int>(std::strtol(n.c_str(), nullptr, 0));
-        if (v > 0 && v <= 0xFF) return v;
-    }
-    if (n.size() >= 2 && n[0] == 'F' && std::isdigit(static_cast<unsigned char>(n[1]))) {
-        int idx = std::atoi(n.c_str() + 1);
-        if (idx >= 1 && idx <= 24) return 0x6F + idx;  // VK_F1 = 0x70
-    }
-    // Digits already returned above, so only letters are left to name themselves.
-    if (n.size() == 1 && n[0] >= 'A' && n[0] <= 'Z') return n[0];
-    if (n == "HOME")     return VK::Home;
-    if (n == "END")      return VK::End;
-    if (n == "INSERT")   return VK::Insert;
-    if (n == "DELETE")   return VK::Delete;
-    if (n == "SPACE")    return VK::Space;
-    if (n == "PAGEUP")   return 0x21;  // VK_PRIOR
-    if (n == "PAGEDOWN") return 0x22;  // VK_NEXT
-    if (n == "ESCAPE" || n == "ESC") return VK::Escape;
-    return 0;
+/// A hotkey list from CameraUnlock.ini. The table holds only lists its hotkey
+/// codec wrote, so one that does not parse is a bug, not a player's typo.
+std::vector<cameraunlock::input::KeyBinding> Bindings(const char* key, const std::string& list) {
+    const auto parsed = cameraunlock::input::ParseKeyBindings(list);
+    if (!parsed.ok())
+        throw std::logic_error(std::string(key) + "=" + list + " does not parse: " + parsed.error);
+    return parsed.bindings;
 }
 
-void WarnUnboundKey(const char* setting, const std::string& name, const char* chord) {
-    PHT_LOG(Warn, "[Hotkeys] %s = \"%s\" is not a key name this mod knows, so that action has "
-                  "no nav-cluster binding this session. Use %s instead, or fix the name in "
-                  "HeadTracking.ini.", setting, name.c_str(), chord);
+const char* ModeName(cameraunlock::TrackingMode mode) {
+    switch (mode) {
+        case cameraunlock::TrackingMode::RotationAndPosition: return "6DOF (rotation + position)";
+        case cameraunlock::TrackingMode::RotationOnly:        return "3DOF rotation only";
+        case cameraunlock::TrackingMode::PositionOnly:        return "3DOF position only";
+    }
+    return "unknown";
 }
 }  // namespace
 
 std::optional<std::string> HeadTracking::OnInitialize() {
     const auto& cfg = Framework::Get().Cfg();
 
+    m_enabled.store(cfg.enable_on_startup, std::memory_order_release);
     m_worldSpaceYaw.store(cfg.world_space_yaw, std::memory_order_release);
-    m_dofMode.store(cfg.position_enabled ? DofMode::SixDof : DofMode::RotationOnly,
-                    std::memory_order_release);
+    m_mode.store(StartupMode(cfg), std::memory_order_release);
+    PHT_LOG(Info, "Tracking %s at startup, mode %s, yaw %s",
+            cfg.enable_on_startup ? "on" : "off", ModeName(StartupMode(cfg)),
+            cfg.world_space_yaw ? "world-space" : "camera-local");
 
-    m_processor.SetSensitivity(cfg.AsSensitivity());
-    m_processor.SetDeadzone(cfg.AsDeadzone());
     m_processor.SetLocalSmoothing(cfg.local_smoothing);
     m_processor.SetRemoteSmoothing(cfg.remote_smoothing);
 
     m_posProcessor.SetSettings(cfg.AsPositionSettings());
-    m_pivotForward = cfg.pivot_forward;
-    m_pivotUp      = cfg.pivot_up;
     m_localSmoothing = cfg.local_smoothing;
     m_remoteSmoothing = cfg.remote_smoothing;
 
     m_receiver = std::make_unique<cameraunlock::UdpReceiver>();
     m_receiver->SetLog([](const std::string& m){ PHT_LOG(Info, "[udp] %s", m.c_str()); });
-    if (!m_receiver->Start(cfg.udp_port)) {
+    if (!m_receiver->Start(static_cast<uint16_t>(cfg.udp_port))) {
         // Non-fatal: UdpReceiver schedules its own retry loop when the port
         // is held. We log and continue; pose simply stays zero until it binds.
-        PHT_LOG(Warn, "OpenTrack UDP %u not bound yet; receiver will retry.", cfg.udp_port);
+        PHT_LOG(Warn, "OpenTrack UDP %u not bound yet; receiver will retry.", static_cast<unsigned>(cfg.udp_port));
     } else {
-        PHT_LOG(Info, "Listening for OpenTrack on UDP %u", cfg.udp_port);
+        PHT_LOG(Info, "Listening for OpenTrack on UDP %u", static_cast<unsigned>(cfg.udp_port));
     }
     // Seed the processors so the first frame already uses the right value.
     // Nothing is logged here: no packet has arrived, and the locality line
@@ -94,35 +71,11 @@ std::optional<std::string> HeadTracking::OnInitialize() {
     m_posProcessor.SetIsRemoteConnection(m_isRemoteConnection);
 
     m_hotkeys = std::make_unique<cameraunlock::input::HotkeyPoller>();
-    using cameraunlock::input::ChordGuarded;
-    using cameraunlock::input::NavGuarded;
-    // Nav-cluster bindings from config. NavGuarded suppresses them while
-    // Ctrl+Shift is held so the chord path is the sole trigger for a
-    // Ctrl+Shift+<nav> combo and one keypress never fires an action twice.
-    // A name ParseVk cannot place leaves that action on its chord alone, which
-    // reads in game exactly like a broken hotkey. Say so rather than binding
-    // nothing in silence.
-    if (int vk = ParseVk(cfg.toggle_key); vk != 0) {
-        m_hotkeys->SetToggleKey(vk, NavGuarded([this]{ SetEnabled(!Enabled()); }));
-    } else {
-        WarnUnboundKey("ToggleKey", cfg.toggle_key, "Ctrl+Shift+Y");
-    }
-    if (int vk = ParseVk(cfg.yaw_mode_key); vk != 0) {
-        m_hotkeys->AddHotkey(vk, NavGuarded([this]{ ToggleYawMode(); }));
-    } else {
-        WarnUnboundKey("YawModeKey", cfg.yaw_mode_key, "Ctrl+Shift+H");
-    }
-    if (int vk = ParseVk(cfg.position_key); vk != 0) {
-        m_hotkeys->AddHotkey(vk, NavGuarded([this]{ CycleDofMode(); }));
-    } else {
-        WarnUnboundKey("PositionKey", cfg.position_key, "Ctrl+Shift+G");
-    }
-    // Chord equivalents (Ctrl+Shift+Y toggle, Ctrl+Shift+G DOF-mode cycle,
-    // Ctrl+Shift+H yaw mode) for keyboards without a nav cluster.
-    // The poller edge-detects the letter; ChordGuarded gates it on the modifiers.
-    m_hotkeys->AddHotkey('Y', ChordGuarded([this]{ SetEnabled(!Enabled()); }));
-    m_hotkeys->AddHotkey('G', ChordGuarded([this]{ CycleDofMode(); }));
-    m_hotkeys->AddHotkey('H', ChordGuarded([this]{ ToggleYawMode(); }));
+    using cameraunlock::input::RegisterKeyBindings;
+    RegisterKeyBindings(*m_hotkeys, Bindings("ToggleKey", cfg.toggle_key), [this]{ SetEnabled(!Enabled()); });
+    RegisterKeyBindings(*m_hotkeys, Bindings("CycleTrackingModeKey", cfg.cycle_tracking_mode_key),
+                        [this]{ CycleTrackingMode(); });
+    RegisterKeyBindings(*m_hotkeys, Bindings("YawModeKey", cfg.yaw_mode_key), [this]{ ToggleYawMode(); });
     // The receiver locks onto whichever app's packet lands first after the bind
     // and ignores every other one, so an app the player is not using - a bridge
     // left running from a previous session, a vendor tool that streams a pose
@@ -130,12 +83,15 @@ std::optional<std::string> HeadTracking::OnInitialize() {
     // session. From the game that reads as tracking simply not working, and
     // starting the real tracker afterwards does not displace the incumbent
     // because it never goes silent. This steps to the next source.
-    m_hotkeys->AddHotkey('U', ChordGuarded([this]{ CycleTrackerSource(); }));
-    // Delete / Ctrl+Shift+J carry the first-person body with the head. Wanted in
-    // the space suit, not wanted with a gun in hand - Prey draws the held item as
-    // part of the same object - so it is a key rather than a restart.
-    m_hotkeys->AddHotkey(cameraunlock::input::VK::Delete, NavGuarded([]{ ToggleBodyFollowsHead(); }));
-    m_hotkeys->AddHotkey('J', ChordGuarded([]{ ToggleBodyFollowsHead(); }));
+    RegisterKeyBindings(*m_hotkeys, Bindings("CycleTrackerSourceKey", cfg.cycle_tracker_source_key),
+                        [this]{ CycleTrackerSource(); });
+    // Carries the first-person body with the head. Wanted in the space suit, not
+    // wanted with a gun in hand - Prey draws the held item as part of the same
+    // object - so it is a key rather than a restart.
+    RegisterKeyBindings(*m_hotkeys, Bindings("BodyFollowsHeadKey", cfg.body_follows_head_key), []{
+        const bool follows = ToggleBodyFollowsHead();
+        Framework::Get().Persist([follows](Config& c) { c.body_follows_head = follows; });
+    });
     m_hotkeys->Start();
 
     m_lastFrame = std::chrono::steady_clock::now();
@@ -249,7 +205,7 @@ void HeadTracking::OnFrame() {
             PHT_LOG(Warn, "A tracker sample did not resolve to a rotation and was dropped; the "
                           "view holds its last pose and the pipeline restarts on the next good "
                           "sample. Check what is sending to UDP %u.",
-                    Framework::Get().Cfg().udp_port);
+                    static_cast<unsigned>(Framework::Get().Cfg().udp_port));
         }
         return;
     }
@@ -271,49 +227,15 @@ void HeadTracking::OnFrame() {
         return;
     }
 
-    // The PHYSICAL head rotation: the smoothed pose before per-axis
-    // sensitivity and inversion. The pivot artifact is a property of where the
-    // tracked point sits on a real head, so scaling that angle by a sensitivity
-    // factor over-corrects it and inverting an axis drives the correction
-    // backwards.
-    const float rawX = px, rawY = py, rawZ = pz;
-
     float physYaw{}, physPitch{}, physRoll{};
     m_processor.GetSmoothedRotation(physYaw, physPitch, physRoll);
     const auto rotQ = cameraunlock::math::Quat4::FromYawPitchRoll(physYaw, physPitch, physRoll);
 
-    // Take out the part of the reported position that is only the head turning.
-    //
-    // A tracker watches a point on the face, and the head swings that point about
-    // a pivot down in the neck. Pitching up therefore reports several centimetres
-    // of translation the player never made, and because the lever is longest on
-    // pitch that axis is much the worst - yaw and roll swing the tracked point far
-    // less. Left uncorrected in Prey it walks the camera out of the player's head
-    // and into their own body.
-    //
-    // Modelled as a rigid lever from the pivot to the tracked point in head-local
-    // axes (x right, y up, z out the BACK of the head, matching the rest of the
-    // pipeline). At the tracker's own neutral pose the rotation is identity, so
-    // the correction is zero there.
-    if (m_pivotForward != 0.0f || m_pivotUp != 0.0f) {
-        const cameraunlock::math::Vec3 lever(0.0f, m_pivotUp, -m_pivotForward);
-        const cameraunlock::math::Vec3 artifact = rotQ.Rotate(lever) - lever;
-        px -= artifact.x;
-        py -= artifact.y;
-        pz -= artifact.z;
-    }
-
-    // The raw tracker position next to what the pivot correction made of it. A
-    // camera that moves when the head only turned is either the tracker reporting
-    // the swing or this correction inventing one, and the two are impossible to
-    // tell apart from the processed value alone.
     if (Framework::Get().Cfg().dump_camera) {
         constexpr unsigned kDumpEveryFrames = 30;   // about twice a second
         static unsigned s_n = 0;
         if ((s_n++ % kDumpEveryFrames) == 0) {
-            PHT_LOG(Info, "tracker raw: pitch=%.2f pos_in=(%.4f %.4f %.4f) "
-                          "after_pivot=(%.4f %.4f %.4f) lever=(%.2f %.2f)",
-                    physPitch, rawX, rawY, rawZ, px, py, pz, m_pivotForward, m_pivotUp);
+            PHT_LOG(Info, "tracker raw: pitch=%.2f pos_in=(%.4f %.4f %.4f)", physPitch, px, py, pz);
         }
     }
 
@@ -356,28 +278,34 @@ HeadPosition HeadTracking::CurrentPosition() const {
     return p;
 }
 
-void HeadTracking::CycleDofMode() {
-    DofMode next;
-    const char* label;
-    switch (GetDofMode()) {
-        case DofMode::SixDof:       next = DofMode::RotationOnly; label = "3DOF rotation only"; break;
-        case DofMode::RotationOnly: next = DofMode::PositionOnly; label = "3DOF position only"; break;
-        default:                    next = DofMode::SixDof;       label = "6DOF (rotation + position)"; break;
+void HeadTracking::CycleTrackingMode() {
+    using cameraunlock::TrackingMode;
+    TrackingMode next;
+    switch (GetTrackingMode()) {
+        case TrackingMode::RotationAndPosition: next = TrackingMode::RotationOnly; break;
+        case TrackingMode::RotationOnly:        next = TrackingMode::PositionOnly; break;
+        default:                                next = TrackingMode::RotationAndPosition; break;
     }
-    m_dofMode.store(next, std::memory_order_release);
-    PHT_LOG(Info, "DOF mode: %s", label);
+    m_mode.store(next, std::memory_order_release);
+    PHT_LOG(Info, "Tracking mode: %s", ModeName(next));
+    const cameraunlock::TrackingModeChannels channels = cameraunlock::EncodeTrackingMode(next);
+    Framework::Get().Persist([channels](Config& c) {
+        c.rotation_enabled = channels.rotation_enabled;
+        c.position_enabled = channels.position_enabled;
+    });
 }
 
 void HeadTracking::CycleTrackerSource() {
     m_receiver->CycleSource();
     PHT_LOG(Info, "Stepping to the next app sending to UDP %u; the next [udp] line names the "
-                  "source now driving the view.", Framework::Get().Cfg().udp_port);
+                  "source now driving the view.", static_cast<unsigned>(Framework::Get().Cfg().udp_port));
 }
 
 void HeadTracking::ToggleYawMode() {
     const bool world = !m_worldSpaceYaw.load(std::memory_order_acquire);
     m_worldSpaceYaw.store(world, std::memory_order_release);
     PHT_LOG(Info, "Yaw mode: %s", world ? "world-space (horizon-locked)" : "camera-local");
+    Framework::Get().Persist([world](Config& c) { c.world_space_yaw = world; });
 }
 
 }  // namespace preyht
