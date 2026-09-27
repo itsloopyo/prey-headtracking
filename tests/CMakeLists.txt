@@ -21,9 +21,13 @@ add_test(NAME preyht_tests COMMAND preyht_tests)
 add_executable(preyht_config_tests
     config_tests.cpp
     ${CMAKE_SOURCE_DIR}/src/PreyHeadTracking/Config.cpp
+    ${CMAKE_SOURCE_DIR}/src/PreyHeadTracking/legacy_config/legacy_config.cpp
 )
 
-target_include_directories(preyht_config_tests PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_include_directories(preyht_config_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src/PreyHeadTracking
+)
 target_link_libraries(preyht_config_tests PRIVATE cameraunlock)
 
 if(MSVC)
@@ -31,3 +35,5 @@ if(MSVC)
 endif()
 
 add_test(NAME preyht_config_tests COMMAND preyht_config_tests)
+
+add_subdirectory(config_differential)

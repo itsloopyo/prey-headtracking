@@ -3,6 +3,7 @@ set(PREY_DLL_SOURCES
     Framework.cpp
     Mods.cpp
     Config.cpp
+    legacy_config/legacy_config.cpp
     hooks/D3D11Hook.cpp
     mods/HeadTracking.cpp
     mods/CryEngineCamera.cpp

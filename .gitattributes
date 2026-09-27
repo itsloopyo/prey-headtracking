@@ -6,3 +6,7 @@
 *.gif binary
 *.zip binary
 *.dll binary
+# Byte fixtures: the published build's sources the differential test hashes, and
+# the config files it reads as inputs.
+tests/config_differential/oracle/published/** -text
+tests/config_differential/inputs/** -text
