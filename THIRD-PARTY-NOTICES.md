@@ -15,7 +15,7 @@ Prey.
 | injector | `f7fd18f` (inside Ultimate ASI Loader v9.7.2) | zlib | Compiled into the vendored dinput8.dll |
 | miniz | 3.0.0 (inside Ultimate ASI Loader v9.7.2) | MIT | Compiled into the vendored dinput8.dll |
 | MinHook | v1.3.4-14-gd94c64d | BSD-2-Clause | Compiled into `PreyHeadTracking.asi` |
-| cameraunlock-core | de8d03a06f8184253b61f0836a5e3ce9d9003934 | MIT | Compiled into `PreyHeadTracking.asi` |
+| cameraunlock-core | ac271752d8fcf37e793b70744aa8eb12588d91ea | MIT | Compiled into `PreyHeadTracking.asi` |
 | OpenTrack | n/a | ISC | Not bundled; UDP protocol interoperability only |
 
 ---
@@ -258,7 +258,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ## cameraunlock-core
 
-- **Version:** commit `de8d03a06f8184253b61f0836a5e3ce9d9003934`
+- **Version:** commit `ac271752d8fcf37e793b70744aa8eb12588d91ea`
 - **License:** `MIT`
 - **Upstream:** https://github.com/itsloopyo/cameraunlock-core
 - **Usage:** Supplies the shared receiver, interpolation, processing and hotkey
