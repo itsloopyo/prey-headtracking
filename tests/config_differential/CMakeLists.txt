@@ -54,3 +54,4 @@ add_test(NAME config_lint COMMAND node
     $<TARGET_FILE_DIR:prey_config_differential>/migrated)
 set_tests_properties(config_lint PROPERTIES DEPENDS config_differential)
 set_tests_properties(config_differential PROPERTIES TIMEOUT 3600)
+set_tests_properties(config_differential config_lint PROPERTIES LABELS differential)

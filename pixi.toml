@@ -25,7 +25,9 @@ build-debug = { cmd = "cmake --build build --config Debug", depends-on = ["setup
 # reader), the config differential test (tests/config_differential) and core's
 # canonical config lint over the committed file and every file that test
 # migrated. Packaging depends on this so none of it can drift into a release ZIP.
-test = { cmd = "ctest --test-dir build -C Release --output-on-failure", depends-on = ["build"] }
+test-unit = { cmd = "ctest --test-dir build -C Release --output-on-failure -LE differential", depends-on = ["build"] }
+test-differential = { cmd = "ctest --test-dir build -C Release --output-on-failure --no-tests=error -L differential", depends-on = ["build"] }
+test = { depends-on = ["test-unit", "test-differential"] }
 # Rewrite the committed HeadTracking.ini, the table's fresh render and so the
 # CameraUnlock.ini a first launch creates, after a change to a row, a comment or
 # a default, then write the manifest config block's per_game from it. The render
@@ -39,7 +41,7 @@ clean = { cmd = "powershell -Command \"if (Test-Path 'build') { Remove-Item 'bui
 clean-all = { cmd = "powershell -Command \"if (Test-Path 'build') { Remove-Item 'build' -Recurse -Force }; if (Test-Path 'release') { Remove-Item 'release' -Recurse -Force }\"" }
 update-deps = { cmd = "powershell -ExecutionPolicy Bypass -File scripts/update-deps.ps1" }
 check-fingerprint = { cmd = "powershell -ExecutionPolicy Bypass -File scripts/check-fingerprint.ps1" }
-package = { cmd = "powershell -ExecutionPolicy Bypass -File scripts/package-release.ps1", depends-on = ["build", "test"] }
+package = { cmd = "powershell -ExecutionPolicy Bypass -File scripts/package-release.ps1", depends-on = ["build", "test-unit"] }
 install = { cmd = "powershell -ExecutionPolicy Bypass -File scripts/deploy.ps1 Release", depends-on = ["build"] }
 uninstall = { cmd = "cmd /c scripts\\uninstall.cmd /y" }
 release = { cmd = "powershell -ExecutionPolicy Bypass -File scripts/release.ps1" }
